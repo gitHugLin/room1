@@ -398,7 +398,7 @@ int PerspectiveAdd::InitEGL()
 
     EGLint numConfigs;
     EGLint cfg_attribs[] = {EGL_BUFFER_SIZE,    EGL_DONT_CARE,
-                            EGL_DEPTH_SIZE,     16,
+                            EGL_DEPTH_SIZE,     8,
                             EGL_RED_SIZE,       8,
                             EGL_GREEN_SIZE,     8,
                             EGL_BLUE_SIZE,      8,
@@ -407,64 +407,80 @@ int PerspectiveAdd::InitEGL()
 
     // Get default display connection
     display = eglGetDisplay((EGLNativeDisplayType)EGL_DEFAULT_DISPLAY);
-    if ( display == EGL_NO_DISPLAY )
+    if ( display == EGL_NO_DISPLAY || eglGetError() != EGL_SUCCESS )
     {
+        LOGE("ERROR: eglGetDisplay return EGL_NO_DISPLAY");
         return EGL_FALSE;
     }
 
     // Initialize EGL display connection
     eRetStatus = eglInitialize(display, &majorVer, &minorVer);
-    if( eRetStatus != EGL_TRUE )
+    if( eRetStatus != EGL_TRUE || eglGetError() != EGL_SUCCESS)
     {
+        LOGE("ERROR: eglInitialize return EGL_FALSE");
         return EGL_FALSE;
     }
 
     //Get a list of all EGL frame buffer configurations for a display
     eRetStatus = eglGetConfigs (display, configs, 2, &numConfigs);
-    if( eRetStatus != EGL_TRUE )
+    if( eRetStatus != EGL_TRUE || eglGetError() != EGL_SUCCESS )
     {
+        LOGE("ERROR: eglGetConfigs return EGL_FALSE");
         return EGL_FALSE;
     }
 
     // Get a list of EGL frame buffer configurations that match specified attributes
     eRetStatus = eglChooseConfig (display, cfg_attribs, configs, 2, &numConfigs);
-    if( eRetStatus != EGL_TRUE  || !numConfigs)
+    if( eRetStatus != EGL_TRUE  || !numConfigs || eglGetError() != EGL_SUCCESS)
     {
+        LOGE("ERROR: eglChooseConfig return EGL_FALSE");
         return EGL_FALSE;
     }
 
+    sp <IGraphicBufferProducer> producer;
+    sp <IGraphicBufferConsumer> consumer;
+    BufferQueue::createBufferQueue(&producer, &consumer);
+    sp <GLConsumer> mST = new GLConsumer(consumer, 123, GLConsumer::TEXTURE_EXTERNAL, true, false);
+    mST->setDefaultBufferSize(64, 64);
+    mST->setDefaultBufferFormat(HAL_PIXEL_FORMAT_RGBA_8888);
+    sp <Surface> mSTC = new Surface(producer);
+    sp <ANativeWindow> window = mSTC.get();
+    eglWindow = window.get();
+
     //LOGE("eglCreateWindowSurface");
     // Create a new EGL window surface
-    //surface = eglCreateWindowSurface(display, configs[0], eglWindow, NULL);
-    //if (surface == EGL_NO_SURFACE)
-    //{
-    //return EGL_FALSE;
-    //}
-
+    surface = eglCreateWindowSurface(display, configs[0], eglWindow, NULL);
+    if (surface == EGL_NO_SURFACE || eglGetError() != EGL_SUCCESS)
+    {
+        LOGE("ERROR: eglCreateWindowSurface return EGL_FALSE");
+        return EGL_FALSE;
+    }
 
     // Set the current rendering API (EGL_OPENGL_API, EGL_OPENGL_ES_API,EGL_OPENVG_API)
     eRetStatus = eglBindAPI(EGL_OPENGL_ES_API);
-    if (eRetStatus != EGL_TRUE)
+    if (eRetStatus != EGL_TRUE || eglGetError() != EGL_SUCCESS)
     {
+        LOGE("ERROR: eglBindAPI return EGL_FALSE");
         return EGL_FALSE;
     }
 
     // Create a new EGL rendering context
     context = eglCreateContext (display, configs[0], EGL_NO_CONTEXT, context_attribs);
-    if (context == EGL_NO_CONTEXT)
+    if (context == EGL_NO_CONTEXT || eglGetError() != EGL_SUCCESS)
     {
+        LOGE("ERROR: eglCreateContext return EGL_FALSE");
         return EGL_FALSE;
     }
 
     // Attach an EGL rendering context to EGL surfaces
-    eRetStatus = eglMakeCurrent (display, surface, surface, context);
-    if( eRetStatus != EGL_TRUE )
+    eRetStatus = eglMakeCurrent(display, surface, surface, context);
+    if( eRetStatus != EGL_TRUE || eglGetError() != EGL_SUCCESS)
     {
+        LOGE("ERROR: eglMakeCurrent return EGL_FALSE");
         return EGL_FALSE;
     }
     //If interval is set to a value of 0, buffer swaps are not synchronized to a video frame, and the swap happens as soon as the render is complete.
     eglSwapInterval(display,0);
-
 
     return EGL_TRUE;
 }

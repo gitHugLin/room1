@@ -8,7 +8,7 @@ include /opt/android-opencv-sdk/OpenCV-android-sdk/sdk/native/jni/OpenCV.mk
 
 LOCAL_MODULE := AddPictureLib
 LOCAL_LDFLAGS := -Wl,--build-id
-LOCAL_LDLIBS := -llog -landroid -lGLESv2 -lEGL -lcutils -lui -lutils
+LOCAL_LDLIBS := -llog -landroid -lGLESv2 -lEGL -lcutils -lui -lutils -lgui
 LOCAL_CFLAGS :=  -DEGL_EGLEXT_PROTOTYPES -DGL_GLEXT_PROTOTYPES
 
 LOCAL_SRC_FILES := \

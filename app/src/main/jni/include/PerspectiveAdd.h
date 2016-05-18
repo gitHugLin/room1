@@ -1,7 +1,3 @@
-//
-// Created by linqi on 16-4-5.
-//
-
 #ifndef MY_JNI_PERSPECTIVEADD_H
 #define MY_JNI_PERSPECTIVEADD_H
 
@@ -17,15 +13,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ui/GraphicBuffer.h>
+#include <gui/GLConsumer.h>
+#include <gui/Surface.h>
+#include <gui/IGraphicBufferConsumer.h>
+#include <gui/IGraphicBufferProducer.h>
 #include "log.h"
 #include "include/MyStruct.h"
 #include "include/MutGetHomography.h"
 
 using namespace mystruct;
 using namespace cv;
-
-using android::GraphicBuffer;
-using android::sp;
+using namespace android;
 
 
 class PerspectiveAdd

@@ -25,7 +25,9 @@ import android.view.View;
 import android.widget.Button;
 
 import org.opencv.android.Utils;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -70,7 +72,7 @@ public class MainActivity extends Activity
     NdkUtils MFDenoisy = new NdkUtils();
 
     public void updatePreview() {
-        //mCamera.setOneShotPreviewCallback(GLPreviewActivity.this);
+        //mCamera.setOneShotPreviewCallback(this);
         mCamera.setPreviewCallback(this);
     }
 
@@ -96,18 +98,46 @@ public class MainActivity extends Activity
                 Utils.bitmapToMat(bmp, Ychannel);
                 long matAddr = Ychannel.getNativeObjAddr();
                 MFDenoisy.updateTexture(matAddr);
+                Log.e("matAddr", "Ychannel.getNativeObjAddr:= " + matAddr);
             }
         } catch (Exception ex) {
             Log.e("Sys", "Error:" + ex.getMessage());
         }
     }
 
+    int mWidth = 0;
+    int mHeight = 0;
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
+        Camera.Parameters parameters = camera.getParameters();
+        Camera.Size size = parameters.getPreviewSize();
+        /*int Height = size.height + size.height/2;
+        int Width = size.width;*/
+        //Log.i("onPreviewFrame", "PreviewSize = " + data.length );
+        //Log.i("onPreviewFrame", "PreviewSize = ("+ size.width + "," + size.height +")" );
         if (data.length != 0) {
-            if(!isReading)
-                decodeToBitMap(data,camera);
-
+            if(!isReading) {
+                //decodeToBitMap(data,camera);
+                Mat YUV420SP = new Mat(mHeight, mWidth, CvType.CV_8UC1, new Scalar(0));
+                YUV420SP.put(0, 0, data);
+                Mat Ychannel = new Mat(size.height, size.width, CvType.CV_8UC1, new Scalar(0));
+                Ychannel.put(0, 0, data);
+                long yuvAddr = YUV420SP.getNativeObjAddr();
+                long yAddr = Ychannel.getNativeObjAddr();
+                MFDenoisy.updateTextures(yuvAddr,yAddr);
+/*                if (textureIndex == 0)
+                    mHomography = MFDenoisy.calHomography(yAddr, true);
+                else
+                    mHomography = MFDenoisy.calHomography(yAddr, false);
+                textureIndex++;
+                if (textureIndex == 6)
+                {
+                    textureIndex = 0;
+                }
+                for(int i = 0; i< 9; i++) {
+                    Log.i("mHomography", "mHomography" +"["+i+"] = " + mHomography[i] );
+                }*/
+            }
 
             /*Camera.Parameters parameters = camera.getParameters();
             Camera.Size size = parameters.getPreviewSize();
@@ -117,20 +147,9 @@ public class MainActivity extends Activity
             Mat Ychannel = new Mat(size.height, size.width, CvType.CV_8UC1, new Scalar(0));
             Ychannel.put(0, 0, data);
             //Utils.bitmapToMat(bitmap, Ychannel);
-            long matAddr = Ychannel.getNativeObjAddr();*/
-      /*          if (textureIndex == 0)
-                    mHomography = MFDenoisy.calHomography(matAddr, true);
-                else
-                    mHomography = MFDenoisy.calHomography(matAddr, false);
-                textureIndex++;
-                if (textureIndex == 6)
-                {
-                    textureIndex = 0;
-                }
-                for(int i = 0; i< 9; i++) {
-                    Log.i("mHomography", "mHomography" +"["+i+"] = " + mHomography[i] );
-                }*/
-            Log.i("onPreviewFrame", "onPreviewFrame is running!");
+            long yAddr = Ychannel.getNativeObjAddr();*/
+
+           // Log.i("onPreviewFrame", "onPreviewFrame is running!");
         } else {
             Log.e("onPreviewFrame", "onPreviewFrame error!");
         }
@@ -189,7 +208,7 @@ public class MainActivity extends Activity
             mCamera = Camera.open(cameraID);
             preview.setCamera(mCamera);
         } catch (Exception e) {
-            Log.d(TAG, "Can't open camera with id " + cameraID);
+            Log.e(TAG, "Can't open camera with id " + cameraID);
             e.printStackTrace();
         }
         //mCamera.getParameters().setPreviewFormat(ImageFormat.JPEG);
@@ -210,6 +229,10 @@ public class MainActivity extends Activity
             e.printStackTrace();
         }
         mCamera.setPreviewCallback(this);
+        Camera.Parameters parameters = mCamera.getParameters();
+        Camera.Size size = parameters.getPreviewSize();
+        mHeight = size.height + size.height/2;
+        mWidth = size.width;
     }
 
     /**
@@ -280,6 +303,7 @@ public class MainActivity extends Activity
         Camera.Size bestPreviewSize = determineBestPreviewSize(parameters);
         Camera.Size bestPictureSize = determineBestPictureSize(parameters);
 
+        //parameters.setPreviewSize(3264, 2448);
         parameters.setPreviewSize(bestPreviewSize.width, bestPreviewSize.height);
         parameters.setPictureSize(bestPictureSize.width, bestPictureSize.height);
 
@@ -388,7 +412,7 @@ public class MainActivity extends Activity
         //}
         if (id == R.id.button_take_picture) {
             isReading = true;
-            Bitmap mFinalBitmap = Bitmap.createBitmap(3264 ,2448 ,Bitmap.Config.ARGB_8888);
+            Bitmap mFinalBitmap = Bitmap.createBitmap(1280 , 960,Bitmap.Config.ARGB_8888);
             long address = MFDenoisy.processing();
             Mat outMat = new Mat(address);
             Utils.matToBitmap(outMat, mFinalBitmap); //convert mat to bitmap

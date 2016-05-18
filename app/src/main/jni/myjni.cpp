@@ -135,14 +135,35 @@ static void getImageUnderDir( const char *path, const char *suffix,const char *d
     closedir(pDir);
 }
 
+static pthread_mutex_t g_mutex;
+
+JNIEXPORT void JNICALL initNDK(JNIEnv *env, jobject obj){
+    pthread_mutex_init( &g_mutex, NULL );
+}
+
+JNIEXPORT void JNICALL updateTextures(JNIEnv *env, jobject obj,jlong yuvPtr,jlong yPtr)
+{
+    //pthread_mutex_lock( &g_mutex );
+    Mat *yuvTexture = (Mat *)yuvPtr;
+    Mat *yTexture = (Mat *)yPtr;
+    if(texIndex == 6)
+        texIndex = 0;
+    g_picVec[texIndex] = *yuvTexture;
+    g_grayVec[texIndex] = *yTexture;
+    texIndex++;
+    //pthread_mutex_unlock( &g_mutex );
+}
+
 JNIEXPORT void JNICALL updateTexture(JNIEnv *env, jobject obj,jlong bitMatPtr)
 {
+    //pthread_mutex_lock( &g_mutex );
     Mat *texture = (Mat *)bitMatPtr;
     if(texIndex == 6)
         texIndex = 0;
     g_picVec[texIndex] = *texture;
     cvtColor(*texture, g_grayVec[texIndex], COLOR_RGB2GRAY);
     texIndex++;
+    //pthread_mutex_unlock( &g_mutex );
 }
 
 JNIEXPORT void JNICALL initOpenGLES(JNIEnv *env, jobject obj,jcharArray path,jint length)
@@ -179,6 +200,7 @@ JNIEXPORT void JNICALL initOpenGLES(JNIEnv *env, jobject obj,jcharArray path,jin
 
 JNIEXPORT jlong JNICALL processing(JNIEnv *env, jobject obj)
 {
+    //pthread_mutex_lock( &g_mutex );
     jfieldID  nameFieldId ;
     jclass cls = env->GetObjectClass(obj);  //获得Java层该对象实例的类引用，即HelloJNI类引用
     nameFieldId = env->GetFieldID(cls ,"time", "D"); //获得属性句柄
@@ -192,23 +214,26 @@ JNIEXPORT jlong JNICALL processing(JNIEnv *env, jobject obj)
     Mat outMat;
     int HomMethod = LMEDS; // RHO   RANSAC LMEDS
     g_APUnit.setMode(HomMethod);
-    g_APUnit.Progress(outMat);
-    //outMat = g_picVec[0];
+    //g_APUnit.Progress(outMat);
+    outMat = g_grayVec[0];
     Mat *imgData = new Mat(outMat);
     LOGE("SUM TIME COUNT");
     workEnd();
-    //imwrite("/mnt/internal_sd/APCamera/testRGB.jpg", outMat);
+    //sdcard/DCIM/Camera
+    //imwrite("/mnt/sdcard/DCIM/Camera/testRGB.jpg", outMat);
     env->SetDoubleField(obj,nameFieldId ,gTime); // 设置该字段的值
     return (jlong)imgData;
+    //pthread_mutex_unlock( &g_mutex );
 }
-
 
 
 static const char *className = "com/example/linqi/mfdnoisy/NdkUtils";
 
 //定义方法隐射关系
 static JNINativeMethod methods[] = {
+        {"initNDK","()V",(void*)initNDK},
         {"calHomography","(JZ)[F",(void*)calHomography},
+        {"updateTextures","(JJ)V",(void*)updateTextures},
         {"updateTexture","(J)V",(void*)updateTexture},
         {"processing","()J",(void*)processing},
         {"initOpenGLES","([CI)V",(void*)initOpenGLES},
