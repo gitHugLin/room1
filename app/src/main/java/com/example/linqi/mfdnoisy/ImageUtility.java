@@ -56,10 +56,13 @@ public class ImageUtility {
 
     public static Uri savePicture(Context context, Bitmap bitmap) {
         int cropHeight;
-        if (bitmap.getHeight() > bitmap.getWidth()) cropHeight = bitmap.getWidth();
-        else                                        cropHeight = bitmap.getHeight();
+        if (bitmap.getHeight() > bitmap.getWidth())
+            cropHeight = bitmap.getWidth();
+        else
+            cropHeight = bitmap.getHeight();
 
-        bitmap = ThumbnailUtils.extractThumbnail(bitmap, cropHeight, cropHeight, ThumbnailUtils.OPTIONS_RECYCLE_INPUT);
+        bitmap = ThumbnailUtils.extractThumbnail(bitmap, cropHeight,
+                cropHeight, ThumbnailUtils.OPTIONS_RECYCLE_INPUT);
 
         File mediaStorageDir = new File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),

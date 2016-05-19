@@ -214,13 +214,13 @@ JNIEXPORT jlong JNICALL processing(JNIEnv *env, jobject obj)
     Mat outMat;
     int HomMethod = LMEDS; // RHO   RANSAC LMEDS
     g_APUnit.setMode(HomMethod);
-    //g_APUnit.Progress(outMat);
-    outMat = g_grayVec[0];
+    g_APUnit.Progress(outMat);
+    //outMat = g_grayVec[0];
     Mat *imgData = new Mat(outMat);
     LOGE("SUM TIME COUNT");
     workEnd();
     //sdcard/DCIM/Camera
-    //imwrite("/mnt/sdcard/DCIM/Camera/testRGB.jpg", outMat);
+    //imwrite("/mnt/obb/testRGB.jpg", outMat);
     env->SetDoubleField(obj,nameFieldId ,gTime); // 设置该字段的值
     return (jlong)imgData;
     //pthread_mutex_unlock( &g_mutex );

@@ -111,14 +111,14 @@ public class MainActivity extends Activity
     public void onPreviewFrame(byte[] data, Camera camera) {
         Camera.Parameters parameters = camera.getParameters();
         Camera.Size size = parameters.getPreviewSize();
-        /*int Height = size.height + size.height/2;
-        int Width = size.width;*/
+        int Height = size.height + size.height/2;
+        int Width = size.width;
         //Log.i("onPreviewFrame", "PreviewSize = " + data.length );
         //Log.i("onPreviewFrame", "PreviewSize = ("+ size.width + "," + size.height +")" );
         if (data.length != 0) {
             if(!isReading) {
                 //decodeToBitMap(data,camera);
-                Mat YUV420SP = new Mat(mHeight, mWidth, CvType.CV_8UC1, new Scalar(0));
+                Mat YUV420SP = new Mat(Height, Width, CvType.CV_8UC1, new Scalar(0));
                 YUV420SP.put(0, 0, data);
                 Mat Ychannel = new Mat(size.height, size.width, CvType.CV_8UC1, new Scalar(0));
                 Ychannel.put(0, 0, data);

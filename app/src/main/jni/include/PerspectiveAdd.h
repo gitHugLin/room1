@@ -89,6 +89,7 @@ private:
     void checkFBO();
     void workBegin();
     void workEnd(char* module_name = "null");
+    void checkGlError(const char* op);
     GLuint LoadShader( GLenum type, const char *shaderSrc );
     GLuint LoadProgram( const char *vShaderStr, const char *fShaderStr );
     GLuint createSimpleTexture2D(GLuint _textureid, GLint _textureIndex ,GLubyte* pixels,
