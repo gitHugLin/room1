@@ -37,7 +37,9 @@ public:
     int initOpenGLES(Mat *images,Mat *grays);
     int Progress(Mat & _outMat);
     bool setMode(int homoMethod = RANSAC);
-    int perspectiveAndAdd(const vector <fHomography> & HomographyVec, Mat &dstImage);
+    void setTextureSize(int width,int height);
+    bool updateEGLTexture(int _textureIndex, Mat &_texture, Mat &gray);
+    int perspectiveAndAdd(const vector <fHomography> & HomographyVec, Mat &dstImage,bool single = false);
 private:
 
     Mat m_images[6];

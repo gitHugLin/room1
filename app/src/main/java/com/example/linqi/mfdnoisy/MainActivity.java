@@ -10,6 +10,7 @@ import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.hardware.Camera.Size;
 import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -22,7 +23,7 @@ import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
@@ -32,6 +33,8 @@ import org.opencv.core.Scalar;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 
@@ -45,13 +48,13 @@ public class MainActivity extends Activity
     public static final String CAMERA_FLASH_KEY = "flash_mode";
     public static final String PREVIEW_HEIGHT_KEY = "preview_height";
 
-    private static final int PICTURE_SIZE_MAX_WIDTH = 1280;
-    private static final int PREVIEW_SIZE_MAX_WIDTH = 640;
+    private static final int PICTURE_SIZE_MAX_WIDTH = 1920;
+    private static final int PREVIEW_SIZE_MAX_WIDTH = 1280;
 
 
     private RecyclerView recyclerView;
     private SquareCameraPreview preview;
-    private Button btnChange, btnTake, btnFlash;
+    private ImageButton btnChange, btnTake, btnFlash;
     private MyRecyclerAdapter mAdapter;
 
     private int cameraID;
@@ -87,18 +90,12 @@ public class MainActivity extends Activity
                 image.compressToJpeg(new Rect(0, 0, size.width, size.height),
                         100, stream);
                 Bitmap bmp = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
-/*                Log.w("wwwwwwwww", bmp.getWidth() + " " + bmp.getHeight());
-                Log.w("wwwwwwwww",
-                        (bmp.getPixel(100, 100) & 0xff) + "  "
-                                + ((bmp.getPixel(100, 100) >> 8) & 0xff) + "  "
-                                + ((bmp.getPixel(100, 100) >> 16) & 0xff));*/
-
                 stream.close();
-                Mat Ychannel = new Mat();
+
+/*                Mat Ychannel = new Mat();
                 Utils.bitmapToMat(bmp, Ychannel);
-                long matAddr = Ychannel.getNativeObjAddr();
-                MFDenoisy.updateTexture(matAddr);
-                Log.e("matAddr", "Ychannel.getNativeObjAddr:= " + matAddr);
+                long matAddr = Ychannel.getNativeObjAddr();*/
+                //Log.e("matAddr", "Ychannel.getNativeObjAddr:= " + matAddr);
             }
         } catch (Exception ex) {
             Log.e("Sys", "Error:" + ex.getMessage());
@@ -114,7 +111,7 @@ public class MainActivity extends Activity
         int Height = size.height + size.height/2;
         int Width = size.width;
         //Log.i("onPreviewFrame", "PreviewSize = " + data.length );
-        //Log.i("onPreviewFrame", "PreviewSize = ("+ size.width + "," + size.height +")" );
+        Log.i("onPreviewFrame", "PreviewSize = ("+ size.width + "," + size.height +")" );
         if (data.length != 0) {
             if(!isReading) {
                 //decodeToBitMap(data,camera);
@@ -138,16 +135,6 @@ public class MainActivity extends Activity
                     Log.i("mHomography", "mHomography" +"["+i+"] = " + mHomography[i] );
                 }*/
             }
-
-            /*Camera.Parameters parameters = camera.getParameters();
-            Camera.Size size = parameters.getPreviewSize();
-            //Log.i("onPreviewFrame", "PreviewSize = ("+ size.width + "," + size.height +")" );
-            Log.i("onPreviewFrame", "PreviewSize = " + data.length );
-            //Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, size.height * size.width);
-            Mat Ychannel = new Mat(size.height, size.width, CvType.CV_8UC1, new Scalar(0));
-            Ychannel.put(0, 0, data);
-            //Utils.bitmapToMat(bitmap, Ychannel);
-            long yAddr = Ychannel.getNativeObjAddr();*/
 
            // Log.i("onPreviewFrame", "onPreviewFrame is running!");
         } else {
@@ -178,7 +165,7 @@ public class MainActivity extends Activity
 
 
         //btnChange = (Button) findViewById(R.id.button_change_picture);
-        btnTake = (Button) findViewById(R.id.button_take_picture);
+        btnTake = (ImageButton) findViewById(R.id.button_take_picture);
         //btnFlash = (Button) findViewById(R.id.button_flash_picture);
 
         //btnChange.setOnClickListener(this);
@@ -233,6 +220,7 @@ public class MainActivity extends Activity
         Camera.Size size = parameters.getPreviewSize();
         mHeight = size.height + size.height/2;
         mWidth = size.width;
+        MFDenoisy.setTextureSize(size.width,size.height);
     }
 
     /**
@@ -240,6 +228,7 @@ public class MainActivity extends Activity
      */
     private void stopCameraPreview() {
         // Nulls out callbacks, stops face detection
+        mCamera.setPreviewCallback(null) ;
         mCamera.stopPreview();
         preview.setCamera(null);
     }
@@ -296,18 +285,24 @@ public class MainActivity extends Activity
     /**
      * Setup the camera parameters
      */
+    Camera.Size mPicSize;
     private void setupCamera() {
         // Never keep a global parameters
-        Camera.Parameters parameters = mCamera.getParameters();
+/*        Camera.Parameters parameters = mCamera.getParameters();
 
         Camera.Size bestPreviewSize = determineBestPreviewSize(parameters);
         Camera.Size bestPictureSize = determineBestPictureSize(parameters);
 
-        //parameters.setPreviewSize(3264, 2448);
         parameters.setPreviewSize(bestPreviewSize.width, bestPreviewSize.height);
-        parameters.setPictureSize(bestPictureSize.width, bestPictureSize.height);
+        parameters.setPictureSize(bestPictureSize.width, bestPictureSize.height);*/
 
 
+      Camera.Parameters parameters = mCamera.getParameters();
+        List<Size> previewSizes = parameters.getSupportedPreviewSizes();
+        Size bestPreviewSize = getPropPictureSize(previewSizes, 1.0f, PREVIEW_SIZE_MAX_WIDTH);
+        parameters.setPreviewSize(bestPreviewSize.width, bestPreviewSize.height);
+
+        mPicSize = bestPreviewSize;
         // Set continuous picture focus, if it's supported
         if (parameters.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
@@ -334,18 +329,56 @@ public class MainActivity extends Activity
         return determineBestSize(parameters.getSupportedPictureSizes(), PICTURE_SIZE_MAX_WIDTH);
     }
 
+    public class CameraSizeComparator implements Comparator<Size> {
+        @Override
+        public int compare(Size lhs,
+                           Size rhs) {
+            // TODO Auto-generated method stub
+            if (lhs.width == rhs.width) {
+                return 0;
+            } else if (lhs.width > rhs.width) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+
+    }
+
+    private CameraSizeComparator sizeComparator = new CameraSizeComparator();
+    public Camera.Size getPropPictureSize(List<Camera.Size> list, float th, int minWidth) {
+        Collections.sort(list, sizeComparator);
+        int i = 0;
+        for (Size s : list) {
+            if ((s.width >= minWidth) /*&& equalRate(s, th)*/) {
+                //Log.i(TAG, "PictureSize : w = " + s.width + "h = " + s.height);
+                break;
+            }
+            i++;
+        }
+/*        if (i == list.size()) {
+            i = 0;
+        }*/
+        return list.get(i);
+    }
+
     private Camera.Size determineBestSize(List<Camera.Size> sizes, int widthThreshold) {
         Camera.Size bestSize = null;
         Camera.Size size;
         int numOfSizes = sizes.size();
         for (int i = 0; i < numOfSizes; i++) {
             size = sizes.get(i);
-            boolean isDesireRatio = (size.width / 4) == (size.height / 3);
+            Log.d("Camera.size","Camera.size = (" + size.width + " , " + size.height + ")");
+            if(size.width >= widthThreshold && (size.width%64 == 0)) {
+                bestSize = size;
+                break;
+            }
+            /*boolean isDesireRatio = (size.width / 4) == (size.height / 3);
             boolean isBetterSize = (bestSize == null) || size.width > bestSize.width;
 
             if (isDesireRatio && isBetterSize) {
                 bestSize = size;
-            }
+            }*/
         }
 
         if (bestSize == null) {
@@ -411,13 +444,15 @@ public class MainActivity extends Activity
             //restartPreview();
         //}
         if (id == R.id.button_take_picture) {
+            btnTake.setClickable(false);
             isReading = true;
-            Bitmap mFinalBitmap = Bitmap.createBitmap(1280 , 960,Bitmap.Config.ARGB_8888);
+            Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
             long address = MFDenoisy.processing();
             Mat outMat = new Mat(address);
             Utils.matToBitmap(outMat, mFinalBitmap); //convert mat to bitmap
             savePicture( mFinalBitmap);
             isReading = false;
+            btnTake.setClickable(true);
             //takePicture();
         }/* else if (id == R.id.button_flash_picture) {
             if (flashMode.equalsIgnoreCase(Camera.Parameters.FLASH_MODE_AUTO)) {

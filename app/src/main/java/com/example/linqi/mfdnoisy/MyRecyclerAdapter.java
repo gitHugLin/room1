@@ -37,6 +37,7 @@ public class MyRecyclerAdapter extends RecyclerView.Adapter<ImageItemView> {
         View v = LayoutInflater.from(mContext).inflate(R.layout.item_image, viewGroup, false);
 
         ImageItemView itemView = new ImageItemView(v);
+        itemView.setmContext(mContext);
         itemView.setOnDeleteListener(new ImageItemView.OnDeleteListener() {
             @Override
             public void onDelete(String path) {

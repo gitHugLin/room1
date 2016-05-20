@@ -15,13 +15,4 @@
         android:layout_marginLeft="5dp"
         android:layout_marginRight="5dp" />
 
-    <Button
-        android:id="@+id/button_del_picture"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:text="Del"
-        android:textSize="8sp"
-        android:layout_alignTop="@+id/image_picture"
-        android:layout_alignRight="@+id/image_picture"
-        android:layout_alignEnd="@+id/image_picture" />
 </RelativeLayout>

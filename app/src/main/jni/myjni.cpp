@@ -139,6 +139,14 @@ static pthread_mutex_t g_mutex;
 
 JNIEXPORT void JNICALL initNDK(JNIEnv *env, jobject obj){
     pthread_mutex_init( &g_mutex, NULL );
+    int HomMethod = LMEDS; // RHO   RANSAC LMEDS
+    g_APUnit.setMode(HomMethod);
+    g_APUnit.initOpenGLES(g_picVec,g_grayVec);
+}
+
+JNIEXPORT void JNICALL setTextureSize(JNIEnv *env, jobject obj,jint width,jint height)
+{
+    g_APUnit.setTextureSize(width,height);
 }
 
 JNIEXPORT void JNICALL updateTextures(JNIEnv *env, jobject obj,jlong yuvPtr,jlong yPtr)
@@ -148,23 +156,13 @@ JNIEXPORT void JNICALL updateTextures(JNIEnv *env, jobject obj,jlong yuvPtr,jlon
     Mat *yTexture = (Mat *)yPtr;
     if(texIndex == 6)
         texIndex = 0;
-    g_picVec[texIndex] = *yuvTexture;
-    g_grayVec[texIndex] = *yTexture;
+    g_APUnit.updateEGLTexture(texIndex, *yuvTexture, *yTexture);
+    //g_picVec[texIndex] = *yuvTexture;
+    //g_grayVec[texIndex] = *yTexture;
     texIndex++;
     //pthread_mutex_unlock( &g_mutex );
 }
 
-JNIEXPORT void JNICALL updateTexture(JNIEnv *env, jobject obj,jlong bitMatPtr)
-{
-    //pthread_mutex_lock( &g_mutex );
-    Mat *texture = (Mat *)bitMatPtr;
-    if(texIndex == 6)
-        texIndex = 0;
-    g_picVec[texIndex] = *texture;
-    cvtColor(*texture, g_grayVec[texIndex], COLOR_RGB2GRAY);
-    texIndex++;
-    //pthread_mutex_unlock( &g_mutex );
-}
 
 JNIEXPORT void JNICALL initOpenGLES(JNIEnv *env, jobject obj,jcharArray path,jint length)
 {
@@ -209,11 +207,9 @@ JNIEXPORT jlong JNICALL processing(JNIEnv *env, jobject obj)
         LOGE("LOGE: 没有得到 TIME 的句柄ID \n");
     }
 
-    g_APUnit.initOpenGLES(g_picVec,g_grayVec);
+    //g_APUnit.initOpenGLES(g_picVec,g_grayVec);
     workBegin();
     Mat outMat;
-    int HomMethod = LMEDS; // RHO   RANSAC LMEDS
-    g_APUnit.setMode(HomMethod);
     g_APUnit.Progress(outMat);
     //outMat = g_grayVec[0];
     Mat *imgData = new Mat(outMat);
@@ -231,10 +227,10 @@ static const char *className = "com/example/linqi/mfdnoisy/NdkUtils";
 
 //定义方法隐射关系
 static JNINativeMethod methods[] = {
+        {"setTextureSize","(II)V",(void*)setTextureSize},
         {"initNDK","()V",(void*)initNDK},
         {"calHomography","(JZ)[F",(void*)calHomography},
         {"updateTextures","(JJ)V",(void*)updateTextures},
-        {"updateTexture","(J)V",(void*)updateTexture},
         {"processing","()J",(void*)processing},
         {"initOpenGLES","([CI)V",(void*)initOpenGLES},
 };
