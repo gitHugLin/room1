@@ -141,12 +141,12 @@ JNIEXPORT void JNICALL initNDK(JNIEnv *env, jobject obj){
     pthread_mutex_init( &g_mutex, NULL );
     int HomMethod = LMEDS; // RHO   RANSAC LMEDS
     g_APUnit.setMode(HomMethod);
-    g_APUnit.initOpenGLES(g_picVec,g_grayVec);
 }
 
 JNIEXPORT void JNICALL setTextureSize(JNIEnv *env, jobject obj,jint width,jint height)
 {
-    g_APUnit.setTextureSize(width,height);
+    //LOGE("SetTextureSize : WIDTH = %d , HEIGHT = %d",width,height);
+    g_APUnit.initOpenGLES(width,height);
 }
 
 JNIEXPORT void JNICALL updateTextures(JNIEnv *env, jobject obj,jlong yuvPtr,jlong yPtr)
@@ -157,8 +157,7 @@ JNIEXPORT void JNICALL updateTextures(JNIEnv *env, jobject obj,jlong yuvPtr,jlon
     if(texIndex == 6)
         texIndex = 0;
     g_APUnit.updateEGLTexture(texIndex, *yuvTexture, *yTexture);
-    //g_picVec[texIndex] = *yuvTexture;
-    //g_grayVec[texIndex] = *yTexture;
+    //LOGE("updateEGLTexture :g_APUnit.updateEGLTexture");
     texIndex++;
     //pthread_mutex_unlock( &g_mutex );
 }

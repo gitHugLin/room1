@@ -51,7 +51,7 @@ public class MainActivity extends Activity
     private static final int PICTURE_SIZE_MAX_WIDTH = 1920;
     private static final int PREVIEW_SIZE_MAX_WIDTH = 1280;
 
-
+    private boolean getFrameofSix = false;
     private RecyclerView recyclerView;
     private SquareCameraPreview preview;
     private ImageButton btnChange, btnTake, btnFlash;
@@ -111,7 +111,7 @@ public class MainActivity extends Activity
         int Height = size.height + size.height/2;
         int Width = size.width;
         //Log.i("onPreviewFrame", "PreviewSize = " + data.length );
-        Log.i("onPreviewFrame", "PreviewSize = ("+ size.width + "," + size.height +")" );
+       // Log.i("onPreviewFrame", "PreviewSize = ("+ size.width + "," + size.height +")" );
         if (data.length != 0) {
             if(!isReading) {
                 //decodeToBitMap(data,camera);
@@ -122,6 +122,10 @@ public class MainActivity extends Activity
                 long yuvAddr = YUV420SP.getNativeObjAddr();
                 long yAddr = Ychannel.getNativeObjAddr();
                 MFDenoisy.updateTextures(yuvAddr,yAddr);
+                if(textureIndex >= 6 ) {
+                    getFrameofSix = true;
+                }
+                textureIndex++;
 /*                if (textureIndex == 0)
                     mHomography = MFDenoisy.calHomography(yAddr, true);
                 else
@@ -177,7 +181,6 @@ public class MainActivity extends Activity
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
         mAdapter = new MyRecyclerAdapter(this);
-
         recyclerView.setAdapter(mAdapter);
     }
 
@@ -220,7 +223,6 @@ public class MainActivity extends Activity
         Camera.Size size = parameters.getPreviewSize();
         mHeight = size.height + size.height/2;
         mWidth = size.width;
-        MFDenoisy.setTextureSize(size.width,size.height);
     }
 
     /**
@@ -296,12 +298,11 @@ public class MainActivity extends Activity
         parameters.setPreviewSize(bestPreviewSize.width, bestPreviewSize.height);
         parameters.setPictureSize(bestPictureSize.width, bestPictureSize.height);*/
 
-
-      Camera.Parameters parameters = mCamera.getParameters();
+        Camera.Parameters parameters = mCamera.getParameters();
         List<Size> previewSizes = parameters.getSupportedPreviewSizes();
         Size bestPreviewSize = getPropPictureSize(previewSizes, 1.0f, PREVIEW_SIZE_MAX_WIDTH);
         parameters.setPreviewSize(bestPreviewSize.width, bestPreviewSize.height);
-
+        MFDenoisy.setTextureSize(bestPreviewSize.width,bestPreviewSize.height);
         mPicSize = bestPreviewSize;
         // Set continuous picture focus, if it's supported
         if (parameters.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
@@ -443,7 +444,7 @@ public class MainActivity extends Activity
             //}
             //restartPreview();
         //}
-        if (id == R.id.button_take_picture) {
+        if (id == R.id.button_take_picture && getFrameofSix) {
             btnTake.setClickable(false);
             isReading = true;
             Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);

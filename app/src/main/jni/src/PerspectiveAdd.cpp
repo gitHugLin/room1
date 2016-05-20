@@ -10,6 +10,8 @@ PerspectiveAdd::PerspectiveAdd()
 {
     work_begin = 0;
     work_end = 0;
+    mWidth = 0;
+    mHeight = 0;
     checkInitOpenGLES = false;
 
     //initOpenGLES();
@@ -101,8 +103,8 @@ int PerspectiveAdd::Progress(Mat & _outMat)
                 }
                 HomVec.push_back(fhom);
                 if(1 == index) {
-                        memcpy(fhom.Homography,prtHomography, sizeof(prtHomography));
-                        HomVec.push_back(fhom);
+                    memcpy(fhom.Homography,prtHomography, sizeof(prtHomography));
+                    HomVec.push_back(fhom);
                 }
                 break;
             }
@@ -110,35 +112,23 @@ int PerspectiveAdd::Progress(Mat & _outMat)
             {
                 memcpy(fhom.Homography,prtHomography, sizeof(prtHomography));
                 HomVec.push_back(fhom);
-                //_outMat = m_images[3];
                 single = true;
-                LOGE("Can not find 6 homography Matrix! ");
+                //LOGE("Can not find 6 homography Matrix! ");
                 //return -1;
             }
         }
     }
-    LOGE("Can not find 6 homography Matrix! ");
+    //LOGE("Can not find 6 homography Matrix! ");
     perspectiveAndAdd(HomVec,_outMat,single);
     return 1;
 }
 
-void PerspectiveAdd::setTextureSize(int width,int height)
-{
-    Width = width;
-    Height = height;
-}
 
-int PerspectiveAdd::initOpenGLES(Mat *images,Mat *grays)
+int PerspectiveAdd::initOpenGLES(int width,int height)
 {
     checkInitOpenGLES = true;
-
-    //for(size_t i = 0; i < 6; i++)
-    //{
-        //m_images[i] = images[i];
-        //m_grays[i] = grays[i];
-    //}
-    //Width = grays[0].size().width;
-    //Height = grays[0].size().height;
+    mWidth = width;
+    mHeight = height;
 
     const char gPerspectiveVertexShader[] =
             "attribute vec4 a_position;\n"
@@ -248,9 +238,8 @@ int PerspectiveAdd::initOpenGLES(Mat *images,Mat *grays)
     glUniform1i(glGetUniformLocation(programObject, "u_samplerTexture6"), 5);
 
     GLuint targetTexId;
-    //LOGE("FBO SIZE: WIDTH = %lf , HEIGHT = %lf",Width,Height);
 
-    initializeTmpResEGLImage((int) Width, (int) Height, &targetTexId, &fboTargetHandle, GL_TEXTURE0);
+    initializeTmpResEGLImage((int) mWidth, (int) mHeight, &targetTexId, &fboTargetHandle, GL_TEXTURE0);
     //create texture object
     glGenTextures(1, &textureID1);
     glGenTextures(1, &textureID2);
@@ -258,27 +247,15 @@ int PerspectiveAdd::initOpenGLES(Mat *images,Mat *grays)
     glGenTextures(1, &textureID4);
     glGenTextures(1, &textureID5);
     glGenTextures(1, &textureID6);
-    //LOGE("TEXIDS: %d-%d-%d-%d-%d-%d-%d",targetTexId, textureID1, textureID2, textureID3, textureID4, textureID5, textureID6);
-    createEGLImageTexture(textureID1, 0 , NULL, Width, Height, 3);
-    createEGLImageTexture(textureID2, 1 , NULL, Width, Height, 3);
-    createEGLImageTexture(textureID3, 2 , NULL, Width, Height, 3);
-    createEGLImageTexture(textureID4, 3 , NULL, Width, Height, 3);
-    createEGLImageTexture(textureID5, 4 , NULL, Width, Height, 3);
-    createEGLImageTexture(textureID6, 5 , NULL, Width, Height, 3);
 
-    /*updateEGLImageTexture(textureID1, 0, Width, Height, m_images[0].data);
-    updateEGLImageTexture(textureID2, 1, Width, Height, m_images[1].data);
-    updateEGLImageTexture(textureID3, 2, Width, Height, m_images[2].data);
-    updateEGLImageTexture(textureID4, 3, Width, Height, m_images[3].data);
-    updateEGLImageTexture(textureID5, 4, Width, Height, m_images[4].data);
-    updateEGLImageTexture(textureID6, 5, Width, Height, m_images[5].data);*/
-    //the third frame is the standard frame,we set it ID for textureID0
-    //updateEGLImageTexture(textureID1, 0, Width, Height, m_images[2].data);
-    //updateEGLImageTexture(textureID2, 1, Width, Height, m_images[0].data);
-    //updateEGLImageTexture(textureID3, 2, Width, Height, m_images[1].data);
-    //updateEGLImageTexture(textureID4, 3, Width, Height, m_images[3].data);
-    //updateEGLImageTexture(textureID5, 4, Width, Height, m_images[4].data);
-    //updateEGLImageTexture(textureID6, 5, Width, Height, m_images[5].data);
+    //LOGE("TEXIDS: %d-%d-%d-%d-%d-%d-%d",targetTexId, textureID1, textureID2, textureID3, textureID4, textureID5, textureID6);
+    createEGLImageTexture(textureID1, 0 , NULL, mWidth, mHeight, 3);
+    createEGLImageTexture(textureID2, 1 , NULL, mWidth, mHeight, 3);
+    createEGLImageTexture(textureID3, 2 , NULL, mWidth, mHeight, 3);
+    createEGLImageTexture(textureID4, 3 , NULL, mWidth, mHeight, 3);
+    createEGLImageTexture(textureID5, 4 , NULL, mWidth, mHeight, 3);
+    createEGLImageTexture(textureID6, 5 , NULL, mWidth, mHeight, 3);
+    //LOGE("FBO SIZE: WIDTH = %lf , HEIGHT = %lf",mWidth,mHeight);
 
     return GL_TRUE;
 }
@@ -335,21 +312,15 @@ void PerspectiveAdd::checkGlError(const char* op) {
 int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec, Mat &dstImage,bool single)
 {
     if(single){
-        float gSize[3] = {Width,Height,1.0};
+        float gSize[3] = {mWidth,mHeight,1.0};
         glUniform3fv(vSizeHandle,1,gSize);
     }
     else{
-        float gSize[3] = {Width,Height,2.0};
+        float gSize[3] = {mWidth,mHeight,2.0};
         glUniform3fv(vSizeHandle,1,gSize);
     }
     //LOGE("Time of perspectiveAndAdd");
     //workBegin();
-    //glUniformMatrix3fv(vHomograyHandle1,1,GL_FALSE,HomographyVec[0].Homography);
-    //glUniformMatrix3fv(vHomograyHandle2,1,GL_FALSE,HomographyVec[1].Homography);
-    //glUniformMatrix3fv(vHomograyHandle3,1,GL_FALSE,HomographyVec[2].Homography);
-    //glUniformMatrix3fv(vHomograyHandle4,1,GL_FALSE,HomographyVec[3].Homography);
-    //glUniformMatrix3fv(vHomograyHandle5,1,GL_FALSE,HomographyVec[4].Homography);
-    //glUniformMatrix3fv(vHomograyHandle6,1,GL_FALSE,HomographyVec[5].Homography);
 
     glUniformMatrix3fv(vHomograyHandle1,1,GL_FALSE,HomographyVec[0].Homography);
     glUniformMatrix3fv(vHomograyHandle2,1,GL_FALSE,HomographyVec[1].Homography);
@@ -360,7 +331,7 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     //begin to render
-    glViewport(0, 0, Width, Height);
+    glViewport(0, 0, mWidth, mHeight);
     const GLfloat vVertices[] = {
             // X,  Y, Z, W,    U, V
             1,  1, 0, 1,    1, 1, //Top Right
@@ -412,7 +383,7 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
         LOGD("mYUVTexBuffer->lock(...) failed: %d\n", err);
         return -1;
     }
-    Mat result(Height, Width, CV_8UC4, mTargetGraphicBufferAddr);
+    Mat result(mHeight, mWidth, CV_8UC4, mTargetGraphicBufferAddr);
 
     dstImage = result.clone();
     //dstImage = result;
@@ -707,7 +678,7 @@ GLuint PerspectiveAdd::createEGLImageTexture(GLuint _textureid, GLint _textureIn
     EGLClientBuffer clientBuffer = (EGLClientBuffer) mGraphicBuffer[_textureIndex] ->getNativeBuffer();
     mEGLImage[_textureIndex] = eglCreateImageKHR(display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID,
                                                  clientBuffer, 0);
-
+    //LOGE("Can not find 6 homography Matrix! ");
     if(mEGLImage[_textureIndex] == EGL_NO_IMAGE_KHR){
         LOGE("mEGLImage[_textureIndex]-eglCreateImageKHR: failed");
     }
@@ -751,31 +722,31 @@ GLuint PerspectiveAdd::createEGLImageTexture(GLuint _textureid, GLint _textureIn
 bool PerspectiveAdd::updateEGLTexture(int _textureIndex, Mat &_texture,Mat &gray)
 {
     bool ret = true;
-    int width = _texture.cols;
-    int height = _texture.rows;
+    int width = mWidth;
+    int height = mHeight;
     switch(_textureIndex) {
         case 0:
-            updateEGLImageTexture(textureID1, 0, width, height, _texture.data);
+            updateEGLImageTexture(textureID1, 0, mWidth, mHeight, _texture.data);
             m_grays[0] = gray;
             break;
         case 1:
-            updateEGLImageTexture(textureID2, 1, width, height, _texture.data);
+            updateEGLImageTexture(textureID2, 1, mWidth, mHeight, _texture.data);
             m_grays[1] = gray;
             break;
         case 2:
-            updateEGLImageTexture(textureID3, 2, width, height, _texture.data);
+            updateEGLImageTexture(textureID3, 2, mWidth, mHeight, _texture.data);
             m_grays[2] = gray;
             break;
         case 3:
-            updateEGLImageTexture(textureID4, 3, width, height, _texture.data);
+            updateEGLImageTexture(textureID4, 3, mWidth, mHeight, _texture.data);
             m_grays[3] = gray;
             break;
         case 4:
-            updateEGLImageTexture(textureID5, 4, width, height, _texture.data);
+            updateEGLImageTexture(textureID5, 4, mWidth, mHeight, _texture.data);
             m_grays[4] = gray;
             break;
         case 5:
-            updateEGLImageTexture(textureID6, 5, width, height, _texture.data);
+            updateEGLImageTexture(textureID6, 5, mWidth, mHeight, _texture.data);
             m_grays[5] = gray;
             break;
         default:

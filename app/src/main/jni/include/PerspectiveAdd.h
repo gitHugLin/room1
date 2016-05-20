@@ -34,10 +34,9 @@ public:
 
 public:
     //int initOpenGLES(const vector <Mat> & images,const vector <Mat> & grays);
-    int initOpenGLES(Mat *images,Mat *grays);
+    int initOpenGLES(int width,int height);
     int Progress(Mat & _outMat);
     bool setMode(int homoMethod = RANSAC);
-    void setTextureSize(int width,int height);
     bool updateEGLTexture(int _textureIndex, Mat &_texture, Mat &gray);
     int perspectiveAndAdd(const vector <fHomography> & HomographyVec, Mat &dstImage,bool single = false);
 private:
@@ -48,8 +47,8 @@ private:
     double work_begin;
     double work_end;
     unsigned char *gData;
-    float Width;
-    float Height;
+    float mWidth;
+    float mHeight;
     int HomoMethod;
     bool checkInitOpenGLES;
     //OpenGLES data
