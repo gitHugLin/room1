@@ -35,5 +35,15 @@
         android:layout_alignParentEnd="true"
         android:src="@drawable/btn_shutter_background" />
 
+    <TextView
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="time"
+        android:id="@+id/time"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@+id/surfaceView"
+        android:textColor="#ffffff" />
+
 
 </RelativeLayout>

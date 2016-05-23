@@ -148,9 +148,10 @@ int PerspectiveAdd::initOpenGLES(int width,int height)
                     "varying vec2 v_texCoord6;\n"
                     "varying vec2 single;\n"
                     "void main() {\n"
-                    "  if (textureSize.z == 1.0)\n"
+                    "  if (textureSize.z == 1.0) {\n"
                     "      single.x = 1.0;\n"
-                    "  else\n"
+                    "      v_texCoord1 = a_texCoord;}\n"
+                    "  else {\n"
                     "      single.x = 0.0;\n"
                     "  float width = textureSize.x;\n"
                     "  float height = textureSize.y;\n"
@@ -180,7 +181,7 @@ int PerspectiveAdd::initOpenGLES(int width,int height)
                     "  Y = dPoint.y/(dPoint.z*height);\n"
                     "  v_texCoord6 = vec2(X,Y);\n"
                     "  gl_Position = a_position;\n"
-                    "}\n";
+                    "}}\n";
 
     const char gPerspectiveFragmentShader[] =
             "#extension GL_OES_EGL_image_external : require\n"
@@ -273,7 +274,7 @@ void PerspectiveAdd::initializeTmpResEGLImage(int fboWidth, int fboHeight, GLuin
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     //HAL_PIXEL_FORMAT_RGBA_8888 HAL_PIXEL_FORMAT_RGB_888
-    mTargetGraphicBuffer = new GraphicBuffer(fboWidth, fboHeight, HAL_PIXEL_FORMAT_RGBA_8888,
+    mTargetGraphicBuffer = new GraphicBuffer(fboWidth, fboHeight, HAL_PIXEL_FORMAT_RGB_888,
                                              GraphicBuffer::USAGE_HW_TEXTURE | GraphicBuffer::USAGE_SW_WRITE_RARELY);
 
     EGLClientBuffer clientBuffer = (EGLClientBuffer)mTargetGraphicBuffer->getNativeBuffer();
@@ -383,7 +384,7 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
         LOGD("mYUVTexBuffer->lock(...) failed: %d\n", err);
         return -1;
     }
-    Mat result(mHeight, mWidth, CV_8UC4, mTargetGraphicBufferAddr);
+    Mat result(mHeight, mWidth, CV_8UC3, mTargetGraphicBufferAddr);
 
     dstImage = result.clone();
     //dstImage = result;
@@ -668,9 +669,10 @@ GLuint PerspectiveAdd::createEGLImageTexture(GLuint _textureid, GLint _textureIn
             format = GL_RGBA;
             break;
     }
-
-//HAL_PIXEL_FORMAT_YCrCb_420_SP; HAL_PIXEL_FORMAT_RGB_888 ;HAL_PIXEL_FORMAT_YV12
-    mGraphicBuffer[_textureIndex] = new GraphicBuffer(width, height, HAL_PIXEL_FORMAT_YCrCb_420_SP,
+    //Sofia use HAL_PIXEL_FORMAT_YV12
+    //RK3288 use HAL_PIXEL_FORMAT_YCrCb_420_SP
+    //HAL_PIXEL_FORMAT_YCrCb_420_SP; HAL_PIXEL_FORMAT_RGB_888 ;HAL_PIXEL_FORMAT_YV12
+    mGraphicBuffer[_textureIndex] = new GraphicBuffer(width, height, HAL_PIXEL_FORMAT_YV12,
                                                       GraphicBuffer::USAGE_HW_TEXTURE | GraphicBuffer::USAGE_SW_WRITE_RARELY);
     //mGraphicBuffer[_textureIndex] = new GraphicBuffer(width, height, HAL_PIXEL_FORMAT_RGB_888,
                                                       //GraphicBuffer::USAGE_HW_TEXTURE);// | GraphicBuffer::USAGE_SW_WRITE_RARELY);

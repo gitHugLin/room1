@@ -23,7 +23,7 @@ static void workEnd()
 {
     work_end = getTickCount() - work_begin;
     gTime = work_end /((double)getTickFrequency() )* 1000.0;
-    LOGE("TIME = %lf ms \n",gTime);
+    LOGE("MFDnoisy TIME = %lf ms \n",gTime);
 }
 
 static void getImageUnderDir( char *path, char *suffix);
@@ -32,7 +32,7 @@ static Mat g_grayVec[6];
 static int texIndex = 0;
 static Mat standardMat;
 static Mat normalMat;
-PerspectiveAdd g_APUnit;
+static PerspectiveAdd g_APUnit;
 
 JNIEXPORT jfloatArray JNICALL calHomography(JNIEnv *env, jobject obj,jlong grayMatPtr,jboolean first)
 {

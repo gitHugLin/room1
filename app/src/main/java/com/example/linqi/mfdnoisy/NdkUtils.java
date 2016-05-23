@@ -3,7 +3,7 @@ package com.example.linqi.mfdnoisy;
 
 public class NdkUtils {
 
-    double time;
+    public double time;
     NdkUtils() {
         initNDK();
         time = 0;

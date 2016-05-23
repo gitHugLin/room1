@@ -40,7 +40,7 @@ void MutGetHomography::workEnd()
     double gTime = 0.0;
     work_end = getTickCount() - work_begin;
     gTime = work_end /((double)getTickFrequency() )* 1000.0;
-    LOGE("TIME = %lf ms \n",gTime);
+    LOGE("MutGetHomography TIME = %lf ms \n",gTime);
 }
 
 MutGetHomography::~MutGetHomography()

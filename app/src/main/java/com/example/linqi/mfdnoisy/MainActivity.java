@@ -24,6 +24,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
@@ -49,9 +50,10 @@ public class MainActivity extends Activity
     public static final String PREVIEW_HEIGHT_KEY = "preview_height";
 
     private static final int PICTURE_SIZE_MAX_WIDTH = 1920;
-    private static final int PREVIEW_SIZE_MAX_WIDTH = 1280;
+    private static final int PREVIEW_SIZE_MAX_WIDTH = 3264;
 
     private boolean getFrameofSix = false;
+    private TextView mTextView;
     private RecyclerView recyclerView;
     private SquareCameraPreview preview;
     private ImageButton btnChange, btnTake, btnFlash;
@@ -106,18 +108,18 @@ public class MainActivity extends Activity
     int mHeight = 0;
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-        Camera.Parameters parameters = camera.getParameters();
+/*        Camera.Parameters parameters = camera.getParameters();
         Camera.Size size = parameters.getPreviewSize();
         int Height = size.height + size.height/2;
-        int Width = size.width;
+        int Width = size.width;*/
         //Log.i("onPreviewFrame", "PreviewSize = " + data.length );
-       // Log.i("onPreviewFrame", "PreviewSize = ("+ size.width + "," + size.height +")" );
+        //Log.i("onPreviewFrame", "PreviewSize = ("+ mPicSize.width + "," + mPicSize.height +")" );
         if (data.length != 0) {
             if(!isReading) {
                 //decodeToBitMap(data,camera);
-                Mat YUV420SP = new Mat(Height, Width, CvType.CV_8UC1, new Scalar(0));
+                Mat YUV420SP = new Mat(mHeight, mWidth, CvType.CV_8UC1, new Scalar(0));
                 YUV420SP.put(0, 0, data);
-                Mat Ychannel = new Mat(size.height, size.width, CvType.CV_8UC1, new Scalar(0));
+                Mat Ychannel = new Mat(mPicSize.height, mPicSize.width, CvType.CV_8UC1, new Scalar(0));
                 Ychannel.put(0, 0, data);
                 long yuvAddr = YUV420SP.getNativeObjAddr();
                 long yAddr = Ychannel.getNativeObjAddr();
@@ -167,7 +169,7 @@ public class MainActivity extends Activity
         preview = (SquareCameraPreview) findViewById(R.id.surfaceView);
         preview.getHolder().addCallback(this);
 
-
+        mTextView = (TextView)findViewById(R.id.time);
         //btnChange = (Button) findViewById(R.id.button_change_picture);
         btnTake = (ImageButton) findViewById(R.id.button_take_picture);
         //btnFlash = (Button) findViewById(R.id.button_flash_picture);
@@ -218,11 +220,11 @@ public class MainActivity extends Activity
             Log.d(TAG, "Can't start camera preview due to IOException " + e);
             e.printStackTrace();
         }
-        mCamera.setPreviewCallback(this);
         Camera.Parameters parameters = mCamera.getParameters();
         Camera.Size size = parameters.getPreviewSize();
         mHeight = size.height + size.height/2;
         mWidth = size.width;
+        mCamera.setPreviewCallback(this);
     }
 
     /**
@@ -434,6 +436,97 @@ public class MainActivity extends Activity
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        //mWorkThread.setMsg(WorkThread.STATE_EXIT);
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        //restartPreview();
+        //mWorkThread.setMsg(WorkThread.STATE_EXIT);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        mOrientationListener.disable();
+        // stop the preview
+        stopCameraPreview();
+        mCamera.release();
+
+        //mWorkThread.setMsg(WorkThread.STATE_EXIT);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        mWorkThread = new WorkThread();
+        mWorkThread.setPriority(10);
+        mWorkThread.start();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mWorkThread.setMsg(WorkThread.STATE_EXIT);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //mWorkThread.setMsg(WorkThread.STATE_EXIT);
+    }
+
+
+
+    WorkThread mWorkThread;
+    class WorkThread extends Thread {
+        public final static int STATE_NONE = 0;
+        public final static int STATE_INIT = 1;
+        public final static int STATE_RUN = 2;
+        public final static int STATE_EXIT = 3;
+
+        int msg;
+        public WorkThread() {
+
+            msg = STATE_NONE;
+            Log.i("WorkThread", "create a WorkThread!");
+        }
+
+        void setMsg(int message) {
+            msg = message;
+        }
+        @Override
+        public void run() {
+            while (msg != STATE_EXIT) {
+                if (msg == STATE_RUN) {
+                    mWorkThread.setMsg(WorkThread.STATE_NONE);
+                    //Log.i("RunThread", "RunThread");
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
+                            long address = MFDenoisy.processing();
+                            Mat outMat = new Mat(address);
+                            Utils.matToBitmap(outMat, mFinalBitmap); //convert mat to bitmap
+                            savePicture( mFinalBitmap);
+                            double retTime = MFDenoisy.time;
+                            String time = retTime + " ms";
+                            mTextView.setText(time);
+                            isReading = false;
+                            btnTake.setClickable(true);
+                            //WorkThread.this.setMsg(STATE_NONE);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    @Override
     public void onClick(View v) {
         int id = v.getId();
         //if (id == R.id.button_change_picture) {
@@ -447,13 +540,14 @@ public class MainActivity extends Activity
         if (id == R.id.button_take_picture && getFrameofSix) {
             btnTake.setClickable(false);
             isReading = true;
-            Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
+            mWorkThread.setMsg(WorkThread.STATE_RUN);
+            /*Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
             long address = MFDenoisy.processing();
             Mat outMat = new Mat(address);
             Utils.matToBitmap(outMat, mFinalBitmap); //convert mat to bitmap
             savePicture( mFinalBitmap);
             isReading = false;
-            btnTake.setClickable(true);
+            btnTake.setClickable(true);*/
             //takePicture();
         }/* else if (id == R.id.button_flash_picture) {
             if (flashMode.equalsIgnoreCase(Camera.Parameters.FLASH_MODE_AUTO)) {
@@ -491,16 +585,6 @@ public class MainActivity extends Activity
         mCamera.takePicture(shutterCallback, raw, postView, this);
     }
 
-    @Override
-    public void onStop() {
-        mOrientationListener.disable();
-
-        // stop the preview
-        stopCameraPreview();
-        mCamera.release();
-        super.onStop();
-    }
-
     public void removeFile(String path){
         File f = new File(path);
         if(f.exists()){
@@ -522,6 +606,7 @@ public class MainActivity extends Activity
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+
     }
 
     @Override

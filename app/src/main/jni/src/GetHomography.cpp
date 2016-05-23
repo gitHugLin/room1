@@ -50,7 +50,7 @@ void GetHomography::workEnd()
 {
     work_end = getTickCount() - work_begin;
     double gTime = work_end /((double)getTickFrequency() )* 1000.0;
-    LOGE("TIME = %lf ms \n",gTime);
+    LOGE("GetHomography TIME = %lf ms \n",gTime);
 }
 
 void GetHomography::savePoints(vector<Point2f>& _queryPoints,vector<Point2f>& _trainPoints)
@@ -323,10 +323,10 @@ bool GetHomography::setMode(int homoMethod)
 
 Mat GetHomography::getHomography(double reprojectionThreshold)
 {
-    workBegin();
+    //workBegin();
     bool ret = detectPoints();
-    LOGE("DetectPoints time count!");
-    workEnd();
+    //LOGE("DetectPoints time count!");
+    //workEnd();
     if(ret)
     {
         /*RHO
@@ -338,15 +338,15 @@ Mat GetHomography::getHomography(double reprojectionThreshold)
         *最后，如果没有outliers和噪音非常小，则可以使用默认的方法。*/
         /*ransacReprojThreshod 仅在RANSAC方法中使用，一个点对被认为是内层围值（非异常值）所允许的最大投影误差。即如果：
         那么点i被认为是异常值。如果srcPoints和dstPoints单位是像素，通常意味着在某些情况下这个参数的范围在1到10之间*/
-        workBegin();
-        LOGE("findHomography time count!");
+        //workBegin();
+        //LOGE("findHomography time count!");
         //vector<uchar> inliersMask(m_trainPoints.size());
         //LOGE("total num of Points = %d",m_trainPoints.size());
         Mat homography = findHomography(m_queryPoints,m_trainPoints, HomoMethod, reprojectionThreshold, noArray(), 2000, 0.995);
         //Mat homography = findHomography( m_queryPoints, m_trainPoints, noArray(),method,reprojectionThreshold);
         //需要转置处理，因为GLSL里默认是以列主序读取数组的，而opencv默认的是行主序
         m_Homography = homography.t();
-        workEnd();
+        //workEnd();
     }
 
     //workEnd();
