@@ -274,7 +274,7 @@ void PerspectiveAdd::initializeTmpResEGLImage(int fboWidth, int fboHeight, GLuin
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     //HAL_PIXEL_FORMAT_RGBA_8888 HAL_PIXEL_FORMAT_RGB_888
-    mTargetGraphicBuffer = new GraphicBuffer(fboWidth, fboHeight, HAL_PIXEL_FORMAT_RGB_888,
+    mTargetGraphicBuffer = new GraphicBuffer(fboWidth, fboHeight, HAL_PIXEL_FORMAT_RGBA_8888,
                                              GraphicBuffer::USAGE_HW_TEXTURE | GraphicBuffer::USAGE_SW_WRITE_RARELY);
 
     EGLClientBuffer clientBuffer = (EGLClientBuffer)mTargetGraphicBuffer->getNativeBuffer();
@@ -384,7 +384,7 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
         LOGD("mYUVTexBuffer->lock(...) failed: %d\n", err);
         return -1;
     }
-    Mat result(mHeight, mWidth, CV_8UC3, mTargetGraphicBufferAddr);
+    Mat result(mHeight, mWidth, CV_8UC4, mTargetGraphicBufferAddr);
 
     dstImage = result.clone();
     //dstImage = result;

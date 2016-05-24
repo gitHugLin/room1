@@ -1,7 +1,9 @@
 package com.example.linqi.mfdnoisy;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -14,8 +16,6 @@ import android.hardware.Camera.Size;
 import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,6 +24,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.opencv.android.Utils;
@@ -54,10 +55,11 @@ public class MainActivity extends Activity
 
     private boolean getFrameofSix = false;
     private TextView mTextView;
-    private RecyclerView recyclerView;
+    //private RecyclerView recyclerView;
+    private ImageView imageView;
     private SquareCameraPreview preview;
     private ImageButton btnChange, btnTake, btnFlash;
-    private MyRecyclerAdapter mAdapter;
+    //private MyRecyclerAdapter mAdapter;
 
     private int cameraID;
     private String flashMode;
@@ -178,12 +180,26 @@ public class MainActivity extends Activity
         btnTake.setOnClickListener(this);
         //btnFlash.setOnClickListener(this);
 
+        imageView = (ImageView) findViewById(R.id.iamgeView);
+        //recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
+        //recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
-        recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        //mAdapter = new MyRecyclerAdapter(this);
+        //recyclerView.setAdapter(mAdapter);
 
-        mAdapter = new MyRecyclerAdapter(this);
-        recyclerView.setAdapter(mAdapter);
+        imageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ComponentName cn = new ComponentName("com.android.gallery3d",
+                        "com.android.gallery3d.app.GalleryActivity");
+                Intent intent = new Intent();
+                intent.setComponent(cn);
+                //intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                Log.i("setOnClickListener","button for pictures has been clicked!");
+            }
+        });
     }
 
     @Override
@@ -643,12 +659,12 @@ public class MainActivity extends Activity
 //        ImageView photoImageView = (ImageView) getView().findViewById(R.id.photo);
 //        Bitmap bitmap = ((BitmapDrawable) photoImageView.getDrawable()).getBitmap();
         Uri photoUri = ImageUtility.savePicture(this, bitmap);
-        mAdapter.add(photoUri.getPath(), mAdapter.getItemCount());
-        recyclerView.smoothScrollToPosition(mAdapter.getItemCount()-1);
+        imageView.setImageBitmap(bitmap);
+        //mAdapter.add(photoUri.getPath(), mAdapter.getItemCount());
+        //recyclerView.smoothScrollToPosition(mAdapter.getItemCount()-1);
 
 //        ((CameraActivity) getActivity()).returnPhotoUri(photoUri);
     }
-
 
     /**
      * When orientation changes, onOrientationChanged(int) of the listener will be called
