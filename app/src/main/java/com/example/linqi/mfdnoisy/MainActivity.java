@@ -327,6 +327,8 @@ public class MainActivity extends Activity
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
         }
 
+        parameters.setPreviewFormat(ImageFormat.YV12);
+
         //final Button btnFlashMode = (Button) findViewById(R.id.button_flash_picture);
         //List<String> flashModes = parameters.getSupportedFlashModes();
         //if (flashModes != null && flashModes.contains(flashMode)) {

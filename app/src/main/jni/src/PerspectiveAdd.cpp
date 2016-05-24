@@ -113,12 +113,14 @@ int PerspectiveAdd::Progress(Mat & _outMat)
                 memcpy(fhom.Homography,prtHomography, sizeof(prtHomography));
                 HomVec.push_back(fhom);
                 single = true;
-                //LOGE("Can not find 6 homography Matrix! ");
+                LOGE("Can not find 6 homography Matrix! ");
+                break;
                 //return -1;
             }
         }
     }
-    //LOGE("Can not find 6 homography Matrix! ");
+    if(single == false)
+        LOGE("Find 6 homography Matrix successful! ");
     perspectiveAndAdd(HomVec,_outMat,single);
     return 1;
 }
@@ -230,6 +232,7 @@ int PerspectiveAdd::initOpenGLES(int width,int height)
     vHomograyHandle5 = glGetUniformLocation(programObject, "uMVPMatrix5");
     vHomograyHandle6 = glGetUniformLocation(programObject, "uMVPMatrix6");
     vSizeHandle = glGetUniformLocation(programObject, "textureSize");
+    checkGlError("initOpenGLES-glGetUniformLocation");
     // Set the sampler texture unit index
     glUniform1i(glGetUniformLocation(programObject, "u_samplerTexture1"), 0);
     glUniform1i(glGetUniformLocation(programObject, "u_samplerTexture2"), 1);
@@ -237,10 +240,11 @@ int PerspectiveAdd::initOpenGLES(int width,int height)
     glUniform1i(glGetUniformLocation(programObject, "u_samplerTexture4"), 3);
     glUniform1i(glGetUniformLocation(programObject, "u_samplerTexture5"), 4);
     glUniform1i(glGetUniformLocation(programObject, "u_samplerTexture6"), 5);
-
+    checkGlError("initOpenGLES-glUniform1i");
     GLuint targetTexId;
 
     initializeTmpResEGLImage((int) mWidth, (int) mHeight, &targetTexId, &fboTargetHandle, GL_TEXTURE0);
+    checkGlError("initializeTmpResEGLImage");
     //create texture object
     glGenTextures(1, &textureID1);
     glGenTextures(1, &textureID2);
@@ -267,12 +271,12 @@ void PerspectiveAdd::initializeTmpResEGLImage(int fboWidth, int fboHeight, GLuin
     glGenTextures(1, tex);
     glActiveTexture(texGroup);
     glBindTexture(GL_TEXTURE_2D, *tex);
-
+    checkGlError("initializeTmpResEGLImage-gentex");
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
+    checkGlError("initializeTmpResEGLImage-inittex");
     //HAL_PIXEL_FORMAT_RGBA_8888 HAL_PIXEL_FORMAT_RGB_888
     mTargetGraphicBuffer = new GraphicBuffer(fboWidth, fboHeight, HAL_PIXEL_FORMAT_RGBA_8888,
                                              GraphicBuffer::USAGE_HW_TEXTURE | GraphicBuffer::USAGE_SW_WRITE_RARELY);
@@ -287,7 +291,7 @@ void PerspectiveAdd::initializeTmpResEGLImage(int fboWidth, int fboHeight, GLuin
     glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)mTargetEGLImage);
 
     glGenFramebuffers(1, fbo);
-    //LOGD("generate tex/fbo for target tex id: %d, fbo id: %d, w-h: %d-%d", *tex, *fbo, fboWidth, fboHeight);
+    LOGD("generate tex/fbo for target tex id: %d, fbo id: %d, w-h: %d-%d", *tex, *fbo, fboWidth, fboHeight);
     glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER,
                            GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *tex, 0);
@@ -329,8 +333,9 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
     glUniformMatrix3fv(vHomograyHandle4,1,GL_FALSE,HomographyVec[3].Homography);
     glUniformMatrix3fv(vHomograyHandle5,1,GL_FALSE,HomographyVec[4].Homography);
     glUniformMatrix3fv(vHomograyHandle6,1,GL_FALSE,HomographyVec[5].Homography);
-
+    checkGlError("perspectiveAndAdd-glUniformMatrix3fv");
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    checkGlError("perspectiveAndAdd-glBindFramebuffer");
     //begin to render
     glViewport(0, 0, mWidth, mHeight);
     const GLfloat vVertices[] = {
@@ -348,8 +353,8 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glDisable(GL_CULL_FACE);
-    glEnable(GL_TEXTURE_2D);
+    //glDisable(GL_CULL_FACE);
+    //glEnable(GL_TEXTURE_2D);
 
     glActiveTexture(GL_TEXTURE0);
     glActiveTexture(GL_TEXTURE1);
@@ -357,13 +362,15 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
     glActiveTexture(GL_TEXTURE3);
     glActiveTexture(GL_TEXTURE4);
     glActiveTexture(GL_TEXTURE5);
-
-    glBindTexture(GL_TEXTURE_2D,textureID1);
-    glBindTexture(GL_TEXTURE_2D,textureID2);
-    glBindTexture(GL_TEXTURE_2D,textureID3);
-    glBindTexture(GL_TEXTURE_2D,textureID4);
-    glBindTexture(GL_TEXTURE_2D,textureID5);
-    glBindTexture(GL_TEXTURE_2D,textureID6);
+    checkGlError("perspectiveAndAdd-glActiveTexture");
+    //GL_TEXTURE_EXTERNAL_OES
+    //glBindTexture(GL_TEXTURE_2D,textureID1);
+    //glBindTexture(GL_TEXTURE_2D,textureID2);
+    //glBindTexture(GL_TEXTURE_2D,textureID3);
+    //glBindTexture(GL_TEXTURE_2D,textureID4);
+    //glBindTexture(GL_TEXTURE_2D,textureID5);
+    //glBindTexture(GL_TEXTURE_2D,textureID6);
+    //checkGlError("perspectiveAndAdd-glBindTexture");
     // Load the vertex position
     glVertexAttribPointer(vPositionHandle, 4, GL_FLOAT, GL_FALSE, stride,
                           vVertices);
@@ -372,6 +379,7 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
                           &vVertices[4]);
     glEnableVertexAttribArray(vPositionHandle);
     glEnableVertexAttribArray(vTexCoordHandle);
+    checkGlError("perspectiveAndAdd-glVertexAttribPointer");
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
     glFinish();
     glDisableVertexAttribArray(vPositionHandle);
@@ -643,6 +651,7 @@ GLuint PerspectiveAdd::createSimpleTexture2D(GLuint _textureid, GLint _textureIn
     // Load the texture(changeable)
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
                  GL_UNSIGNED_BYTE, pixels);
+
     // Set the filtering mode
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
@@ -719,6 +728,7 @@ GLuint PerspectiveAdd::createEGLImageTexture(GLuint _textureid, GLint _textureIn
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 线形滤波
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // 线形滤波
+    checkGlError("createEGLImageTexture");
 }
 
 bool PerspectiveAdd::updateEGLTexture(int _textureIndex, Mat &_texture,Mat &gray)
