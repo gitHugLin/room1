@@ -65,7 +65,6 @@ public class MainActivity extends Activity
     private ImageView imageView;
     private SquareCameraPreview preview;
     private ImageButton btnChange, btnTake, btnFlash;
-    //private MyRecyclerAdapter mAdapter;
 
     private int cameraID;
     private String flashMode;
@@ -79,15 +78,10 @@ public class MainActivity extends Activity
     private int mPreviewHeight;
     private CameraOrientationListener mOrientationListener;
 
-    //float mHomography[] = new float[9];
     private static int textureIndex = 0;
     private boolean isReading = false;
     private NdkUtils MFDenoisy = new NdkUtils();
 
-    public void updatePreview() {
-        //mCamera.setOneShotPreviewCallback(this);
-        mCamera.setPreviewCallback(this);
-    }
 
     public void decodeToBitMap(byte[] data, Camera _camera) {
         Camera.Size size = mCamera.getParameters().getPreviewSize();
@@ -116,11 +110,7 @@ public class MainActivity extends Activity
     int mHeight = 0;
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-/*        Camera.Parameters parameters = camera.getParameters();
-        Camera.Size size = parameters.getPreviewSize();
-        int Height = size.height + size.height/2;
-        int Width = size.width;*/
-        //Log.i("onPreviewFrame", "PreviewSize = " + data.length );
+
         //Log.i("onPreviewFrame", "PreviewSize = ("+ mPicSize.width + "," + mPicSize.height +")" );
         if (data.length != 0) {
             if(!isReading) {
@@ -136,18 +126,6 @@ public class MainActivity extends Activity
                     getFrameofSix = true;
                 }
                 textureIndex++;
-/*                if (textureIndex == 0)
-                    mHomography = MFDenoisy.calHomography(yAddr, true);
-                else
-                    mHomography = MFDenoisy.calHomography(yAddr, false);
-                textureIndex++;
-                if (textureIndex == 6)
-                {
-                    textureIndex = 0;
-                }
-                for(int i = 0; i< 9; i++) {
-                    Log.i("mHomography", "mHomography" +"["+i+"] = " + mHomography[i] );
-                }*/
             }
 
            // Log.i("onPreviewFrame", "onPreviewFrame is running!");
@@ -181,21 +159,15 @@ public class MainActivity extends Activity
         preview.getHolder().addCallback(this);
 
         mTextView = (TextView)findViewById(R.id.time);
-        //btnChange = (Button) findViewById(R.id.button_change_picture);
         btnTake = (ImageButton) findViewById(R.id.button_take_picture);
-        //btnFlash = (Button) findViewById(R.id.button_flash_picture);
 
-        //btnChange.setOnClickListener(this);
         btnTake.setOnClickListener(this);
-        //btnFlash.setOnClickListener(this);
 
         imageView = (ImageView) findViewById(R.id.iamgeView);
         bnp = (NumberProgressBar)findViewById(R.id.numberbar);
-        //recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
-        //recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-
-        //mAdapter = new MyRecyclerAdapter(this);
-        //recyclerView.setAdapter(mAdapter);
+        //mMaskView = (MaskView)findViewById(R.id.mask_view);
+        //Rect screenCenterRect = mMaskView.createCenterScreenRect(dstwidth,dstheight);
+        //mMaskView.setCenterRect(screenCenterRect);
 
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -205,9 +177,12 @@ public class MainActivity extends Activity
 
                     ComponentName cn = new ComponentName("com.android.gallery3d",
                             "com.android.gallery3d.app.GalleryActivity");
-                    Intent intent = new Intent();
+                    //Intent intent = new Intent();
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setComponent(cn);
-                    //intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    //photoUri
+                    intent.setDataAndType(photoUri, "image/*");
+
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                     //Log.i("setOnClickListener","button for pictures has been clicked!");
@@ -220,8 +195,10 @@ public class MainActivity extends Activity
         handler = new MyHandler();
     }
 
-    private MyHandler handler = null;
+    //private MaskView mMaskView;
+    private int dstheight=200,dstwidth=200;
 
+    private MyHandler handler = null;
     class MyHandler extends Handler {
 
         @Override
@@ -238,6 +215,7 @@ public class MainActivity extends Activity
         }
 
     }
+
     private boolean isAvilible(Context context, String packageName){
         //获取packagemanager
         final PackageManager packageManager = context.getPackageManager();
@@ -273,7 +251,6 @@ public class MainActivity extends Activity
             Log.e(TAG, "Can't open camera with id " + cameraID);
             e.printStackTrace();
         }
-        //mCamera.getParameters().setPreviewFormat(ImageFormat.JPEG);
     }
 
     /**
@@ -382,15 +359,6 @@ public class MainActivity extends Activity
         }
 
         parameters.setPreviewFormat(ImageFormat.YV12);
-
-        //final Button btnFlashMode = (Button) findViewById(R.id.button_flash_picture);
-        //List<String> flashModes = parameters.getSupportedFlashModes();
-        //if (flashModes != null && flashModes.contains(flashMode)) {
-            //parameters.setFlashMode(flashMode);
-            //btnFlashMode.setVisibility(View.VISIBLE);
-        //} else {
-            //btnFlashMode.setVisibility(View.INVISIBLE);
-        //}
 
         // Lock in the changes
         mCamera.setParameters(parameters);
@@ -594,6 +562,7 @@ public class MainActivity extends Activity
                             isReading = false;
                             btnTake.setClickable(true);
                             btnTake.setAlpha(1.0f);
+                            startCameraPreview();
                             //message = handler.obtainMessage();
                             //message.what = 20;
                             //handler.sendMessage(message);
@@ -609,49 +578,22 @@ public class MainActivity extends Activity
     @Override
     public void onClick(View v) {
         int id = v.getId();
-        //if (id == R.id.button_change_picture) {
-            //if (cameraID == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                //cameraID = getBackCameraID();
-            //} else {
-                //cameraID = getFrontCameraID();
-            //}
-            //restartPreview();
-        //}
+
         if (id == R.id.button_take_picture && getFrameofSix) {
             //message = handler.obtainMessage();
             //message.what = 5;
             //handler.sendMessage(message);
+            //mCamera.stopPreview();
+            stopCameraPreview();
+            textureIndex = 0;
+            getFrameofSix = false;
             btnTake.setClickable(false);
             btnTake.setAlpha(0.5f);
             isReading = true;
             mWorkThread.setMsg(WorkThread.STATE_RUN);
-            //message = handler.obtainMessage();
-            //message.what = 15;
-            //handler.sendMessage(message);
-            /*Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
-            long address = MFDenoisy.processing();
-            Mat outMat = new Mat(address);
-            Utils.matToBitmap(outMat, mFinalBitmap); //convert mat to bitmap
-            savePicture( mFinalBitmap);
-            isReading = false;
-            btnTake.setClickable(true);*/
+
             //takePicture();
-        }/* else if (id == R.id.button_flash_picture) {
-            if (flashMode.equalsIgnoreCase(Camera.Parameters.FLASH_MODE_AUTO)) {
-                flashMode = Camera.Parameters.FLASH_MODE_ON;
-                btnFlash.setText(getResources().getString(R.string.flash_on));
-
-            } else if (flashMode.equalsIgnoreCase(Camera.Parameters.FLASH_MODE_ON)) {
-                flashMode = Camera.Parameters.FLASH_MODE_OFF;
-                btnFlash.setText(getResources().getString(R.string.flash_off));
-
-            } else if (flashMode.equalsIgnoreCase(Camera.Parameters.FLASH_MODE_OFF)) {
-                flashMode = Camera.Parameters.FLASH_MODE_AUTO;
-                btnFlash.setText(getResources().getString(R.string.flash_auto));
-
-            }
-            setupCamera();
-        }*/
+        }
     }
 
     private void takePicture() {
@@ -725,16 +667,12 @@ public class MainActivity extends Activity
 //        photoImageView.setImageBitmap(bitmap);
         return bitmap;
     }
-
+    private Uri photoUri;
     private void savePicture(Bitmap bitmap) {
-//        ImageView photoImageView = (ImageView) getView().findViewById(R.id.photo);
-//        Bitmap bitmap = ((BitmapDrawable) photoImageView.getDrawable()).getBitmap();
-        Uri photoUri = ImageUtility.savePicture(this, bitmap);
-        imageView.setImageBitmap(bitmap);
-        //mAdapter.add(photoUri.getPath(), mAdapter.getItemCount());
-        //recyclerView.smoothScrollToPosition(mAdapter.getItemCount()-1);
 
-//        ((CameraActivity) getActivity()).returnPhotoUri(photoUri);
+        photoUri = ImageUtility.savePicture(this, bitmap);
+        imageView.setImageBitmap(bitmap);
+
     }
 
     /**
