@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,6 +17,8 @@ import android.hardware.Camera.Size;
 import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,9 +26,12 @@ import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
@@ -35,10 +41,10 @@ import org.opencv.core.Scalar;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 
 
 public class MainActivity extends Activity
@@ -68,15 +74,15 @@ public class MainActivity extends Activity
 
     private int mDisplayOrientation;
     private int mLayoutOrientation;
-
+    private NumberProgressBar bnp;
     //    private int mCoverHeight;
     private int mPreviewHeight;
     private CameraOrientationListener mOrientationListener;
 
-    float mHomography[] = new float[9];
-    static int textureIndex = 0;
-    boolean isReading = false;
-    NdkUtils MFDenoisy = new NdkUtils();
+    //float mHomography[] = new float[9];
+    private static int textureIndex = 0;
+    private boolean isReading = false;
+    private NdkUtils MFDenoisy = new NdkUtils();
 
     public void updatePreview() {
         //mCamera.setOneShotPreviewCallback(this);
@@ -86,7 +92,7 @@ public class MainActivity extends Activity
     public void decodeToBitMap(byte[] data, Camera _camera) {
         Camera.Size size = mCamera.getParameters().getPreviewSize();
         try {
-            YuvImage image = new YuvImage(data, ImageFormat.NV21, size.width,
+            YuvImage image = new YuvImage(data, ImageFormat.YV12, size.width,
                     size.height, null);
             Log.w("wwwwwwwww", size.width + " " + size.height);
             if (image != null) {
@@ -153,6 +159,9 @@ public class MainActivity extends Activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
         mOrientationListener = new CameraOrientationListener(this);
@@ -181,6 +190,7 @@ public class MainActivity extends Activity
         //btnFlash.setOnClickListener(this);
 
         imageView = (ImageView) findViewById(R.id.iamgeView);
+        bnp = (NumberProgressBar)findViewById(R.id.numberbar);
         //recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
         //recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
@@ -190,16 +200,60 @@ public class MainActivity extends Activity
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ComponentName cn = new ComponentName("com.android.gallery3d",
-                        "com.android.gallery3d.app.GalleryActivity");
-                Intent intent = new Intent();
-                intent.setComponent(cn);
-                //intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-                Log.i("setOnClickListener","button for pictures has been clicked!");
+
+                if(isAvilible(MainActivity.this, "com.android.gallery3d")) {
+
+                    ComponentName cn = new ComponentName("com.android.gallery3d",
+                            "com.android.gallery3d.app.GalleryActivity");
+                    Intent intent = new Intent();
+                    intent.setComponent(cn);
+                    //intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    //Log.i("setOnClickListener","button for pictures has been clicked!");
+                } else {
+                    Toast.makeText(MainActivity.this, "Can not open Gallery!", Toast.LENGTH_LONG).show();
+                }
             }
         });
+
+        handler = new MyHandler();
+    }
+
+    private MyHandler handler = null;
+
+    class MyHandler extends Handler {
+
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg.what >= 3) {
+                bnp.incrementProgressBy(msg.what);
+                if (bnp.getProgress() >= 100) {
+                    bnp.setProgress(0);
+                    String rs = "多帧叠加完成";
+                    Toast.makeText(MainActivity.this, rs, Toast.LENGTH_SHORT).show();
+                }
+            }
+            super.handleMessage(msg);
+        }
+
+    }
+    private boolean isAvilible(Context context, String packageName){
+        //获取packagemanager
+        final PackageManager packageManager = context.getPackageManager();
+        //获取所有已安装程序的包信息
+        List< PackageInfo > pinfo = packageManager.getInstalledPackages(0);
+        //用于存储所有已安装程序的包名
+        List<String> pName = new ArrayList<String>();
+        //从pinfo中将包名字逐一取出，压入pName list中
+        if(pinfo != null){
+            for(int i = 0; i < pinfo.size(); i++){
+                String pn = pinfo.get(i).packageName;
+                pName.add(pn);
+            }
+        }
+        //判断pName中是否有目标程序的包名，有TRUE，没有FALSE
+        return pName.contains(packageName);
     }
 
     @Override
@@ -526,16 +580,23 @@ public class MainActivity extends Activity
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            //message = handler.obtainMessage();
+                            //message.what = 1;
+                            //handler.sendMessage(message);
                             Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
                             long address = MFDenoisy.processing();
                             Mat outMat = new Mat(address);
                             Utils.matToBitmap(outMat, mFinalBitmap); //convert mat to bitmap
                             savePicture( mFinalBitmap);
-                            double retTime = MFDenoisy.time;
+                            int retTime = (int )MFDenoisy.time;
                             String time = retTime + " ms";
                             mTextView.setText(time);
                             isReading = false;
                             btnTake.setClickable(true);
+                            btnTake.setAlpha(1.0f);
+                            //message = handler.obtainMessage();
+                            //message.what = 20;
+                            //handler.sendMessage(message);
                             //WorkThread.this.setMsg(STATE_NONE);
                         }
                     });
@@ -544,6 +605,7 @@ public class MainActivity extends Activity
         }
     }
 
+    private Message message = new Message();
     @Override
     public void onClick(View v) {
         int id = v.getId();
@@ -556,9 +618,16 @@ public class MainActivity extends Activity
             //restartPreview();
         //}
         if (id == R.id.button_take_picture && getFrameofSix) {
+            //message = handler.obtainMessage();
+            //message.what = 5;
+            //handler.sendMessage(message);
             btnTake.setClickable(false);
+            btnTake.setAlpha(0.5f);
             isReading = true;
             mWorkThread.setMsg(WorkThread.STATE_RUN);
+            //message = handler.obtainMessage();
+            //message.what = 15;
+            //handler.sendMessage(message);
             /*Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
             long address = MFDenoisy.processing();
             Mat outMat = new Mat(address);

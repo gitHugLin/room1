@@ -156,7 +156,7 @@ public class SquareCameraPreview extends SurfaceView {
         float x = mLastTouchX;
         float y = mLastTouchY;
 
-        if (!setFocusBound(x, y)) return;
+        calculateTapArea(x, y,1f);
 
         List<String> supportedFocusModes = params.getSupportedFocusModes();
         if (supportedFocusModes != null
@@ -165,13 +165,39 @@ public class SquareCameraPreview extends SurfaceView {
             params.setFocusAreas(mFocusAreas);
             params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
             mCamera.setParameters(params);
-            mCamera.autoFocus(new Camera.AutoFocusCallback() {
+            mCamera.autoFocus(null);
+            /*mCamera.autoFocus(new Camera.AutoFocusCallback() {
                 @Override
                 public void onAutoFocus(boolean success, Camera camera) {
                     // Callback when the auto focus completes
                 }
-            });
+            });*/
         }
+    }
+
+    private void calculateTapArea(float x, float y, float coefficient) {
+        float focusAreaSize = 300;
+        int areaSize = Float.valueOf(focusAreaSize * coefficient).intValue();
+
+        int centerX = (int) (x / getViewWidth() * 2000 - 1000);
+        int centerY = (int) (y / getViewHeight() * 2000 - 1000);
+
+        int left = clamp(centerX - areaSize / 2, -1000, 1000);
+        int right = clamp(left + areaSize, -1000, 1000);
+        int top = clamp(centerY - areaSize / 2, -1000, 1000);
+        int bottom = clamp(top + areaSize, -1000, 1000);
+
+        mFocusArea.rect.set(left, top, right, bottom);
+    }
+
+    private int clamp(int x, int min, int max) {
+        if (x > max) {
+            return max;
+        }
+        if (x < min) {
+            return min;
+        }
+        return x;
     }
 
     private boolean setFocusBound(float x, float y) {
@@ -198,5 +224,17 @@ public class SquareCameraPreview extends SurfaceView {
             handleZoom(mCamera.getParameters());
             return true;
         }
+
+/*        detector.getCurrentSpan();//两点间的距离跨度
+        detector.getCurrentSpanX();//两点间的x距离
+        detector.getCurrentSpanY();//两点间的y距离
+        detector.getFocusX();       //
+        detector.getFocusY();       //
+        detector.getPreviousSpan(); //上次
+        detector.getPreviousSpanX();//上次
+        detector.getPreviousSpanY();//上次
+        detector.getEventTime();    //当前事件的事件
+        detector.getTimeDelta();    //两次事件间的时间差
+        detector.getScaleFactor();  //与上次事件相比，得到的比例因子*/
     }
 }

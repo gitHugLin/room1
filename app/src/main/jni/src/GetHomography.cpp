@@ -339,14 +339,14 @@ Mat GetHomography::getHomography(double reprojectionThreshold)
         /*ransacReprojThreshod 仅在RANSAC方法中使用，一个点对被认为是内层围值（非异常值）所允许的最大投影误差。即如果：
         那么点i被认为是异常值。如果srcPoints和dstPoints单位是像素，通常意味着在某些情况下这个参数的范围在1到10之间*/
         workBegin();
-        LOGE("FindHomography time count!");
+        //LOGE("FindHomography time count!");
         //vector<uchar> inliersMask(m_trainPoints.size());
         //LOGE("total num of Points = %d",m_trainPoints.size());
         Mat homography = findHomography(m_queryPoints,m_trainPoints, HomoMethod, reprojectionThreshold, noArray(), 2000, 0.995);
         //Mat homography = findHomography( m_queryPoints, m_trainPoints, noArray(),method,reprojectionThreshold);
         //需要转置处理，因为GLSL里默认是以列主序读取数组的，而opencv默认的是行主序
         m_Homography = homography.t();
-        workEnd();
+        //workEnd();
     }
 
     //workEnd();

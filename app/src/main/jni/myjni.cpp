@@ -145,21 +145,24 @@ JNIEXPORT void JNICALL initNDK(JNIEnv *env, jobject obj){
 
 JNIEXPORT void JNICALL setTextureSize(JNIEnv *env, jobject obj,jint width,jint height)
 {
-    //LOGE("SetTextureSize : WIDTH = %d , HEIGHT = %d",width,height);
+    LOGE("SetTextureSize : WIDTH = %d , HEIGHT = %d",width,height);
     g_APUnit.initOpenGLES(width,height);
 }
 
 JNIEXPORT void JNICALL updateTextures(JNIEnv *env, jobject obj,jlong yuvPtr,jlong yPtr)
 {
+    //workBegin();
     //pthread_mutex_lock( &g_mutex );
-    Mat *yuvTexture = (Mat *)yuvPtr;
-    Mat *yTexture = (Mat *)yPtr;
+    //Mat *yuvTexture = (Mat *)yuvPtr;
+    //Mat *yTexture = (Mat *)yPtr;
     if(texIndex == 6)
         texIndex = 0;
-    g_APUnit.updateEGLTexture(texIndex, *yuvTexture, *yTexture);
+    g_APUnit.updateEGLTexture(texIndex,*((Mat *)yuvPtr), *((Mat *)yPtr));
     //LOGE("updateEGLTexture :g_APUnit.updateEGLTexture");
     texIndex++;
     //pthread_mutex_unlock( &g_mutex );
+    //LOGE("updateTextures TIME COUNT");
+    //workEnd();
 }
 
 

@@ -113,14 +113,14 @@ int PerspectiveAdd::Progress(Mat & _outMat)
                 memcpy(fhom.Homography,prtHomography, sizeof(prtHomography));
                 HomVec.push_back(fhom);
                 single = true;
-                LOGE("Can not find 6 homography Matrix! ");
+                LOGE("Can not find six homography Matrix! ");
                 break;
                 //return -1;
             }
         }
     }
     if(single == false)
-        LOGE("Find 6 homography Matrix successful! ");
+        LOGE("Find xie homography Matrix successfully! ");
     perspectiveAndAdd(HomVec,_outMat,single);
     return 1;
 }
@@ -150,10 +150,9 @@ int PerspectiveAdd::initOpenGLES(int width,int height)
                     "varying vec2 v_texCoord6;\n"
                     "varying vec2 single;\n"
                     "void main() {\n"
-                    "  if (textureSize.z == 1.0) {\n"
-                    "      single.x = 1.0;\n"
-                    "      v_texCoord1 = a_texCoord;}\n"
-                    "  else {\n"
+                    "  if (textureSize.z > 1.0)\n"
+                    "      single.x = 2.0;\n"
+                    "  else \n"
                     "      single.x = 0.0;\n"
                     "  float width = textureSize.x;\n"
                     "  float height = textureSize.y;\n"
@@ -183,7 +182,7 @@ int PerspectiveAdd::initOpenGLES(int width,int height)
                     "  Y = dPoint.y/(dPoint.z*height);\n"
                     "  v_texCoord6 = vec2(X,Y);\n"
                     "  gl_Position = a_position;\n"
-                    "}}\n";
+                    "}\n";
 
     const char gPerspectiveFragmentShader[] =
             "#extension GL_OES_EGL_image_external : require\n"
@@ -202,15 +201,15 @@ int PerspectiveAdd::initOpenGLES(int width,int height)
                     "uniform samplerExternalOES u_samplerTexture5;\n"
                     "uniform samplerExternalOES u_samplerTexture6;\n"
                     "void main() {\n"
-                    "  if (single.x == 1.0)\n"
+                    "  if (single.x > 1.0)\n"
                     "      gl_FragColor = texture2D(u_samplerTexture1,v_texCoord1);\n"
                     "  else {\n"
-                    "  gl_FragColor = texture2D(u_samplerTexture1,v_texCoord1)*0.167;\n"
-                    "  gl_FragColor += texture2D(u_samplerTexture2,v_texCoord2)*0.167;\n"
-                    "  gl_FragColor += texture2D(u_samplerTexture3,v_texCoord3)*0.167;\n"
-                    "  gl_FragColor += texture2D(u_samplerTexture4,v_texCoord4)*0.167;\n"
-                    "  gl_FragColor += texture2D(u_samplerTexture5,v_texCoord5)*0.167;\n"
-                    "  gl_FragColor += texture2D(u_samplerTexture6,v_texCoord6)*0.167;\n"
+                    "      gl_FragColor = texture2D(u_samplerTexture1,v_texCoord1)*0.167;\n"
+                    "      gl_FragColor += texture2D(u_samplerTexture2,v_texCoord2)*0.167;\n"
+                    "      gl_FragColor += texture2D(u_samplerTexture3,v_texCoord3)*0.167;\n"
+                    "      gl_FragColor += texture2D(u_samplerTexture4,v_texCoord4)*0.167;\n"
+                    "      gl_FragColor += texture2D(u_samplerTexture5,v_texCoord5)*0.167;\n"
+                    "      gl_FragColor += texture2D(u_samplerTexture6,v_texCoord6)*0.167;\n"
                     "}}\n";
     // Init EGL display, surface and context
     if(!InitEGL())
@@ -278,7 +277,7 @@ void PerspectiveAdd::initializeTmpResEGLImage(int fboWidth, int fboHeight, GLuin
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     checkGlError("initializeTmpResEGLImage-inittex");
     //HAL_PIXEL_FORMAT_RGBA_8888 HAL_PIXEL_FORMAT_RGB_888
-    mTargetGraphicBuffer = new GraphicBuffer(fboWidth, fboHeight, HAL_PIXEL_FORMAT_RGBA_8888,
+    mTargetGraphicBuffer = new GraphicBuffer(fboWidth, fboHeight, HAL_PIXEL_FORMAT_RGB_888,
                                              GraphicBuffer::USAGE_HW_TEXTURE | GraphicBuffer::USAGE_SW_WRITE_RARELY);
 
     EGLClientBuffer clientBuffer = (EGLClientBuffer)mTargetGraphicBuffer->getNativeBuffer();
@@ -316,12 +315,13 @@ void PerspectiveAdd::checkGlError(const char* op) {
 //render in here
 int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec, Mat &dstImage,bool single)
 {
+    workBegin();
     if(single){
-        float gSize[3] = {mWidth,mHeight,1.0};
+        float gSize[3] = {mWidth,mHeight,2.0};
         glUniform3fv(vSizeHandle,1,gSize);
     }
     else{
-        float gSize[3] = {mWidth,mHeight,2.0};
+        float gSize[3] = {mWidth,mHeight,0.0};
         glUniform3fv(vSizeHandle,1,gSize);
     }
     //LOGE("Time of perspectiveAndAdd");
@@ -356,13 +356,13 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
     //glDisable(GL_CULL_FACE);
     //glEnable(GL_TEXTURE_2D);
 
-    glActiveTexture(GL_TEXTURE0);
-    glActiveTexture(GL_TEXTURE1);
-    glActiveTexture(GL_TEXTURE2);
-    glActiveTexture(GL_TEXTURE3);
-    glActiveTexture(GL_TEXTURE4);
-    glActiveTexture(GL_TEXTURE5);
-    checkGlError("perspectiveAndAdd-glActiveTexture");
+    //glActiveTexture(GL_TEXTURE0);
+    //glActiveTexture(GL_TEXTURE1);
+    //glActiveTexture(GL_TEXTURE2);
+    //glActiveTexture(GL_TEXTURE3);
+    //glActiveTexture(GL_TEXTURE4);
+    //glActiveTexture(GL_TEXTURE5);
+    //checkGlError("perspectiveAndAdd-glActiveTexture");
     //GL_TEXTURE_EXTERNAL_OES
     //glBindTexture(GL_TEXTURE_2D,textureID1);
     //glBindTexture(GL_TEXTURE_2D,textureID2);
@@ -392,10 +392,10 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
         LOGD("mYUVTexBuffer->lock(...) failed: %d\n", err);
         return -1;
     }
-    Mat result(mHeight, mWidth, CV_8UC4, mTargetGraphicBufferAddr);
+    Mat result(mHeight, mWidth, CV_8UC3, mTargetGraphicBufferAddr);
 
-    dstImage = result.clone();
-    //dstImage = result;
+    //dstImage = result.clone();
+    dstImage = result;
     err = mTargetGraphicBuffer->unlock();
     if (err != 0)
     {
@@ -403,7 +403,7 @@ int PerspectiveAdd::perspectiveAndAdd(const vector <fHomography> & HomographyVec
         return -1;
     }
 
-    //workEnd("COMPOSITION");
+    workEnd("COMPOSITION");
 
     return GL_TRUE;
 }
