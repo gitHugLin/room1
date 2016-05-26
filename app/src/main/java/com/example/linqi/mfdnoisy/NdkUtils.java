@@ -1,6 +1,7 @@
 package com.example.linqi.mfdnoisy;
 
 
+
 public class NdkUtils {
 
     public double time;
@@ -10,10 +11,9 @@ public class NdkUtils {
     }
 
     public native void initNDK();
-    //public native byte[] nativeGetByteArray();
+    public native void sendTextures(byte[] yuvPtr,long yPtr);
     public native void setTextureSize(int width,int height);
     public native float[] calHomography(long grayMatPtr,boolean first);
-    public native void updateTextures(long yuvPtr,long yPtr);
     public native boolean gray(int[] dstImage,int w,int h);
     public native long processing();
     public native void grayImage(int[][] srcImage,int[] dstImage,int width,int height);

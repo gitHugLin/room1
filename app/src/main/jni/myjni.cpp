@@ -153,28 +153,23 @@ JNIEXPORT void JNICALL setTextureSize(JNIEnv *env, jobject obj,jint width,jint h
     g_APUnit.initOpenGLES(width,height);
 }
 
-//JNIEXPORT jbyteArray JNICALL nativeGetByteArray(JNIEnv *env, jobject obj)
-//{
-    //LOGE("nativeGetByteArray : ");
-    //unsigned char buffer[gWidth*gHeight*3/2];
-//}
-
-JNIEXPORT void JNICALL updateTextures(JNIEnv *env, jobject obj,jlong yuvPtr,jlong yPtr)
+JNIEXPORT void JNICALL sendTextures(JNIEnv *env, jobject obj,jbyteArray yuvBuffer,jlong yPtr)
 {
+    unsigned char *pBuffer = NULL;
+    pBuffer = (unsigned char *)env->GetByteArrayElements(yuvBuffer, NULL);
+    if(pBuffer == NULL ) {
+        LOGE("sendTextures ERROR : Can not get byteArray form JAVA!");
+        return;
+    }
     //workBegin();
-    //pthread_mutex_lock( &g_mutex );
-    //Mat *yuvTexture = (Mat *)yuvPtr;
-    //Mat *yTexture = (Mat *)yPtr;
     if(texIndex == 6)
         texIndex = 0;
-    g_APUnit.updateEGLTexture(texIndex,*((Mat *)yuvPtr), *((Mat *)yPtr));
-    //LOGE("updateEGLTexture :g_APUnit.updateEGLTexture");
+    g_APUnit.updateEGLTextures(texIndex, pBuffer, *((Mat *)yPtr));
     texIndex++;
-    //pthread_mutex_unlock( &g_mutex );
+    env->ReleaseByteArrayElements(yuvBuffer, (jbyte *)pBuffer,0);
     //LOGE("updateTextures TIME COUNT");
     //workEnd();
 }
-
 
 JNIEXPORT void JNICALL initOpenGLES(JNIEnv *env, jobject obj,jcharArray path,jint length)
 {
@@ -239,11 +234,10 @@ static const char *className = "com/example/linqi/mfdnoisy/NdkUtils";
 
 //定义方法隐射关系
 static JNINativeMethod methods[] = {
-        //{"nativeGetByteArray","()[B",(void*)nativeGetByteArray},
+        {"sendTextures","([BJ)V",(void*)sendTextures},
         {"setTextureSize","(II)V",(void*)setTextureSize},
         {"initNDK","()V",(void*)initNDK},
         {"calHomography","(JZ)[F",(void*)calHomography},
-        {"updateTextures","(JJ)V",(void*)updateTextures},
         {"processing","()J",(void*)processing},
         {"initOpenGLES","([CI)V",(void*)initOpenGLES},
 };

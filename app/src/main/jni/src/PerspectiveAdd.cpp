@@ -682,7 +682,7 @@ GLuint PerspectiveAdd::createEGLImageTexture(GLuint _textureid, GLint _textureIn
     //RK3288 use HAL_PIXEL_FORMAT_YCrCb_420_SP
     //HAL_PIXEL_FORMAT_YCrCb_420_SP; HAL_PIXEL_FORMAT_RGB_888 ;HAL_PIXEL_FORMAT_YV12
     mGraphicBuffer[_textureIndex] = new GraphicBuffer(width, height, HAL_PIXEL_FORMAT_YV12,
-                                                      GraphicBuffer::USAGE_HW_TEXTURE | GraphicBuffer::USAGE_SW_WRITE_RARELY);
+                                                      GraphicBuffer::USAGE_HW_TEXTURE);// | GraphicBuffer::USAGE_SW_WRITE_RARELY);
     //mGraphicBuffer[_textureIndex] = new GraphicBuffer(width, height, HAL_PIXEL_FORMAT_RGB_888,
                                                       //GraphicBuffer::USAGE_HW_TEXTURE);// | GraphicBuffer::USAGE_SW_WRITE_RARELY);
 
@@ -731,39 +731,39 @@ GLuint PerspectiveAdd::createEGLImageTexture(GLuint _textureid, GLint _textureIn
     checkGlError("createEGLImageTexture");
 }
 
-bool PerspectiveAdd::updateEGLTexture(int _textureIndex, Mat &_texture,Mat &gray)
+bool PerspectiveAdd::updateEGLTextures(int _textureIndex, unsigned char* pBuffer, Mat &gray)
 {
     bool ret = true;
     int width = mWidth;
     int height = mHeight;
     switch(_textureIndex) {
-        case 0:
-            updateEGLImageTexture(textureID1, 0, mWidth, mHeight, _texture.data);
-            m_grays[0] = gray;
-            break;
-        case 1:
-            updateEGLImageTexture(textureID2, 1, mWidth, mHeight, _texture.data);
-            m_grays[1] = gray;
-            break;
-        case 2:
-            updateEGLImageTexture(textureID3, 2, mWidth, mHeight, _texture.data);
-            m_grays[2] = gray;
-            break;
-        case 3:
-            updateEGLImageTexture(textureID4, 3, mWidth, mHeight, _texture.data);
-            m_grays[3] = gray;
-            break;
-        case 4:
-            updateEGLImageTexture(textureID5, 4, mWidth, mHeight, _texture.data);
-            m_grays[4] = gray;
-            break;
-        case 5:
-            updateEGLImageTexture(textureID6, 5, mWidth, mHeight, _texture.data);
-            m_grays[5] = gray;
-            break;
+        case 0:{
+            updateEGLImageTexture(textureID1, _textureIndex, mWidth, mHeight, pBuffer);
+            m_grays[_textureIndex] = gray;
+            break;}
+        case 1:{
+            updateEGLImageTexture(textureID2, _textureIndex, mWidth, mHeight, pBuffer);
+            m_grays[_textureIndex] = gray;
+            break;}
+        case 2:{
+            updateEGLImageTexture(textureID3, _textureIndex, mWidth, mHeight, pBuffer);
+            m_grays[_textureIndex] = gray;
+            break;}
+        case 3:{
+            updateEGLImageTexture(textureID4, _textureIndex, mWidth, mHeight, pBuffer);
+            m_grays[_textureIndex] = gray;
+            break;}
+        case 4:{
+            updateEGLImageTexture(textureID5, _textureIndex, mWidth, mHeight, pBuffer);
+            m_grays[_textureIndex] = gray;
+            break;}
+        case 5:{
+            updateEGLImageTexture(textureID6, _textureIndex, mWidth, mHeight, pBuffer);
+            m_grays[_textureIndex] = gray;
+            break;}
         default:
             ret = false;
-            LOGD("updateEGLTexture: unexpected texture index!");
+            LOGD("updateEGLTextures: unexpected texture index!");
             break;
     }
     return ret;
@@ -781,6 +781,8 @@ GLuint PerspectiveAdd::updateEGLImageTexture(GLuint _textureid, int _textureInde
     }
     //LOGD("updateEGLImageTexture: memcpy(mGraphicBufferAddr()");
     memcpy(mGraphicBufferAddr[_textureIndex], pixels, width * height * 3/2);
+    //Mat Ychannel(mHeight, mWidth, CV_8UC1, mGraphicBufferAddr[_textureIndex]);
+    //m_grays[_textureIndex] = Ychannel.clone();
     //LOGD("updateEGLImageTexture: memcpy(mGraphicBufferAddr()");
     err = mGraphicBuffer[_textureIndex]->unlock();
     if (err != 0) {

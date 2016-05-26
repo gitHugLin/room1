@@ -84,7 +84,6 @@ public class MainActivity extends Activity
     private boolean isReading = false;
     private NdkUtils MFDenoisy = new NdkUtils();
 
-
     public void decodeToBitMap(byte[] data, Camera _camera) {
         Camera.Size size = mCamera.getParameters().getPreviewSize();
         try {
@@ -110,30 +109,54 @@ public class MainActivity extends Activity
 
     int mWidth = 0;
     int mHeight = 0;
+
+    private class timeCount {
+        private String Tag = "timeCount";
+        private long timeBegin = 0;
+        private long timeEnd = 0;
+        private long sumCount = 0;
+        private int FPS = 0;
+
+        public void workBegin(String tag){
+            Tag = tag;
+            timeBegin = System.currentTimeMillis();
+        }
+
+        public void workEnd(){
+            timeEnd = System.currentTimeMillis() - timeBegin;
+            sumCount = sumCount + timeEnd;
+            FPS++;
+            if(sumCount > 1000.0) {
+                Log.i(Tag, "Fram per second(FPS) = " + FPS );
+                FPS = 0;
+                sumCount = 0;
+            }
+            Log.i(Tag, "Time counts = " + timeEnd );
+        }
+    }
+
+    private timeCount timer = new timeCount();
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
 
+        timer.workBegin("onPreviewFrame");
         //Log.i("onPreviewFrame", "PreviewSize = ("+ mPicSize.width + "," + mPicSize.height +")" );
         if (data.length != 0) {
             if(!isReading) {
-                //decodeToBitMap(data,camera);
-                Mat YUV420SP = new Mat(mHeight, mWidth, CvType.CV_8UC1, new Scalar(0));
-                YUV420SP.put(0, 0, data);
                 Mat Ychannel = new Mat(mPicSize.height, mPicSize.width, CvType.CV_8UC1, new Scalar(0));
                 Ychannel.put(0, 0, data);
-                long yuvAddr = YUV420SP.getNativeObjAddr();
                 long yAddr = Ychannel.getNativeObjAddr();
-                MFDenoisy.updateTextures(yuvAddr,yAddr);
+                MFDenoisy.sendTextures(data,yAddr);
                 if(textureIndex >= 6 ) {
                     getFrameofSix = true;
                 }
                 textureIndex++;
             }
-
-           // Log.i("onPreviewFrame", "onPreviewFrame is running!");
+            //Log.i("onPreviewFrame", "onPreviewFrame is running!");
         } else {
             Log.e("onPreviewFrame", "onPreviewFrame error!");
         }
+        timer.workEnd();
     }
 
     @Override
@@ -234,6 +257,7 @@ public class MainActivity extends Activity
             }
         }).start();
     }
+
     private boolean isAvilible(Context context, String packageName){
         //获取packagemanager
         final PackageManager packageManager = context.getPackageManager();
@@ -569,9 +593,10 @@ public class MainActivity extends Activity
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            message = handler.obtainMessage();
-                            message.what = 1;
-                            handler.sendMessage(message);
+                            //message = handler.obtainMessage();
+                            //message.what = 1;
+                            //handler.sendMessage(message);
+                            //circleBar.setVisibility(View.VISIBLE);
                             Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
                             long address = MFDenoisy.processing();
                             Mat outMat = new Mat(address);
