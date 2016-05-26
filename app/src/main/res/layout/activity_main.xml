@@ -13,7 +13,8 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentBottom="true"
-        android:layout_toStartOf="@+id/button_take_picture" />
+        android:layout_toStartOf="@+id/button_take_picture"
+        android:visibility="visible" />
 
     <ImageView
         android:id="@+id/iamgeView"
@@ -24,17 +25,6 @@
         android:layout_toEndOf="@+id/surfaceView">
 
     </ImageView>
-
-    <com.example.linqi.mfdnoisy.NumberProgressBar
-        android:id="@+id/numberbar"
-        android:layout_height="15dp"
-        android:padding="20dp"
-        android:layout_width="100dp"
-        style="@style/NumberProgressBar_Funny_Orange"
-        android:layout_alignTop="@+id/iamgeView"
-        android:layout_toEndOf="@+id/surfaceView"
-        android:layout_marginTop="39dp"
-        android:visibility="invisible" />
 
     <ImageButton
         android:id="@+id/button_take_picture"
@@ -53,6 +43,14 @@
         android:layout_alignParentTop="true"
         android:layout_toEndOf="@+id/surfaceView"
         android:textColor="#ffffff" />
+
+    <ProgressBar
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/progressBar"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:visibility="visible" />
 
 
 </RelativeLayout>

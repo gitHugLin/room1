@@ -10,6 +10,7 @@ public class NdkUtils {
     }
 
     public native void initNDK();
+    //public native byte[] nativeGetByteArray();
     public native void setTextureSize(int width,int height);
     public native float[] calHomography(long grayMatPtr,boolean first);
     public native void updateTextures(long yuvPtr,long yPtr);

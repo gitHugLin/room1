@@ -13,6 +13,8 @@
 static double work_begin = 0;
 static double work_end = 0;
 static double gTime = 0;
+static int gWidth  = 0;
+static int gHeight = 0;
 //开始计时
 static void workBegin()
 {
@@ -146,8 +148,16 @@ JNIEXPORT void JNICALL initNDK(JNIEnv *env, jobject obj){
 JNIEXPORT void JNICALL setTextureSize(JNIEnv *env, jobject obj,jint width,jint height)
 {
     LOGE("SetTextureSize : WIDTH = %d , HEIGHT = %d",width,height);
+    gWidth = width;
+    gHeight = height;
     g_APUnit.initOpenGLES(width,height);
 }
+
+//JNIEXPORT jbyteArray JNICALL nativeGetByteArray(JNIEnv *env, jobject obj)
+//{
+    //LOGE("nativeGetByteArray : ");
+    //unsigned char buffer[gWidth*gHeight*3/2];
+//}
 
 JNIEXPORT void JNICALL updateTextures(JNIEnv *env, jobject obj,jlong yuvPtr,jlong yPtr)
 {
@@ -229,6 +239,7 @@ static const char *className = "com/example/linqi/mfdnoisy/NdkUtils";
 
 //定义方法隐射关系
 static JNINativeMethod methods[] = {
+        //{"nativeGetByteArray","()[B",(void*)nativeGetByteArray},
         {"setTextureSize","(II)V",(void*)setTextureSize},
         {"initNDK","()V",(void*)initNDK},
         {"calHomography","(JZ)[F",(void*)calHomography},

@@ -109,6 +109,8 @@ public class SquareCameraPreview extends SurfaceView {
     public boolean onTouchEvent(MotionEvent event) {
         mScaleDetector.onTouchEvent(event);
 
+        if( mCamera == null )
+            return false;
         final int action = event.getAction();
         switch (action & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN: {

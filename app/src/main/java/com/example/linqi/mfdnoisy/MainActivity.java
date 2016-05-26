@@ -30,6 +30,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -65,6 +66,7 @@ public class MainActivity extends Activity
     private ImageView imageView;
     private SquareCameraPreview preview;
     private ImageButton btnChange, btnTake, btnFlash;
+    private ProgressBar circleBar;
 
     private int cameraID;
     private String flashMode;
@@ -73,7 +75,7 @@ public class MainActivity extends Activity
 
     private int mDisplayOrientation;
     private int mLayoutOrientation;
-    private NumberProgressBar bnp;
+    //private NumberProgressBar bnp;
     //    private int mCoverHeight;
     private int mPreviewHeight;
     private CameraOrientationListener mOrientationListener;
@@ -164,7 +166,8 @@ public class MainActivity extends Activity
         btnTake.setOnClickListener(this);
 
         imageView = (ImageView) findViewById(R.id.iamgeView);
-        bnp = (NumberProgressBar)findViewById(R.id.numberbar);
+        circleBar = (ProgressBar)findViewById(R.id.progressBar);
+        //bnp = (NumberProgressBar)findViewById(R.id.numberbar);
         //mMaskView = (MaskView)findViewById(R.id.mask_view);
         //Rect screenCenterRect = mMaskView.createCenterScreenRect(dstwidth,dstheight);
         //mMaskView.setCenterRect(screenCenterRect);
@@ -203,19 +206,34 @@ public class MainActivity extends Activity
 
         @Override
         public void handleMessage(Message msg) {
-            if (msg.what >= 3) {
-                bnp.incrementProgressBy(msg.what);
-                if (bnp.getProgress() >= 100) {
-                    bnp.setProgress(0);
-                    String rs = "多帧叠加完成";
-                    Toast.makeText(MainActivity.this, rs, Toast.LENGTH_SHORT).show();
-                }
-            }
             super.handleMessage(msg);
+            if (msg.what == 1) {
+                //start(1);
+                circleBar.setVisibility(View.GONE);
+                //String rs = "多帧叠加完成";
+                //Toast.makeText(MainActivity.this, rs, Toast.LENGTH_SHORT).show();
+            } else {
+                //circleBar.setVisibility(View.GONE);
+            }
         }
 
     }
-
+    private void start(int mes)
+    {
+        final int message = mes;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (message == 1) {
+                    circleBar.setVisibility(View.VISIBLE);
+                    //String rs = "多帧叠加完成";
+                    //Toast.makeText(MainActivity.this, rs, Toast.LENGTH_SHORT).show();
+                } else {
+                    circleBar.setVisibility(View.GONE);
+                }
+            }
+        }).start();
+    }
     private boolean isAvilible(Context context, String packageName){
         //获取packagemanager
         final PackageManager packageManager = context.getPackageManager();
@@ -243,6 +261,7 @@ public class MainActivity extends Activity
     }
 
     private void getCamera(int cameraID) {
+
         Log.d(TAG, "get camera with id " + cameraID);
         try {
             mCamera = Camera.open(cameraID);
@@ -267,10 +286,10 @@ public class MainActivity extends Activity
             Log.d(TAG, "Can't start camera preview due to IOException " + e);
             e.printStackTrace();
         }
-        Camera.Parameters parameters = mCamera.getParameters();
+/*        Camera.Parameters parameters = mCamera.getParameters();
         Camera.Size size = parameters.getPreviewSize();
         mHeight = size.height + size.height/2;
-        mWidth = size.width;
+        mWidth = size.width;*/
         mCamera.setPreviewCallback(this);
     }
 
@@ -353,6 +372,8 @@ public class MainActivity extends Activity
         parameters.setPreviewSize(bestPreviewSize.width, bestPreviewSize.height);
         MFDenoisy.setTextureSize(bestPreviewSize.width,bestPreviewSize.height);
         mPicSize = bestPreviewSize;
+        mHeight = bestPreviewSize.height + bestPreviewSize.height/2;
+        mWidth = bestPreviewSize.width;
         // Set continuous picture focus, if it's supported
         if (parameters.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
@@ -504,7 +525,7 @@ public class MainActivity extends Activity
         super.onResume();
 
         mWorkThread = new WorkThread();
-        mWorkThread.setPriority(10);
+        //mWorkThread.setPriority(10);
         mWorkThread.start();
     }
 
@@ -548,9 +569,9 @@ public class MainActivity extends Activity
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            //message = handler.obtainMessage();
-                            //message.what = 1;
-                            //handler.sendMessage(message);
+                            message = handler.obtainMessage();
+                            message.what = 1;
+                            handler.sendMessage(message);
                             Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
                             long address = MFDenoisy.processing();
                             Mat outMat = new Mat(address);
@@ -563,8 +584,8 @@ public class MainActivity extends Activity
                             btnTake.setClickable(true);
                             btnTake.setAlpha(1.0f);
                             startCameraPreview();
-                            //message = handler.obtainMessage();
-                            //message.what = 20;
+                            message = handler.obtainMessage();
+                            message.what = 2;
                             //handler.sendMessage(message);
                             //WorkThread.this.setMsg(STATE_NONE);
                         }
@@ -581,9 +602,8 @@ public class MainActivity extends Activity
 
         if (id == R.id.button_take_picture && getFrameofSix) {
             //message = handler.obtainMessage();
-            //message.what = 5;
+            //message.what = 1;
             //handler.sendMessage(message);
-            //mCamera.stopPreview();
             stopCameraPreview();
             textureIndex = 0;
             getFrameofSix = false;
@@ -591,7 +611,6 @@ public class MainActivity extends Activity
             btnTake.setAlpha(0.5f);
             isReading = true;
             mWorkThread.setMsg(WorkThread.STATE_RUN);
-
             //takePicture();
         }
     }
@@ -677,7 +696,6 @@ public class MainActivity extends Activity
 
     /**
      * When orientation changes, onOrientationChanged(int) of the listener will be called
-     * Reference : https://github.com/boxme/SquareCamera
      */
     private static class CameraOrientationListener extends OrientationEventListener {
 
