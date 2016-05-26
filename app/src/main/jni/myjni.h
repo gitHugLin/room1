@@ -2,7 +2,6 @@
 #include "string.h"
 #include "assert.h"
 #include "log.h"
-#include "include/format.h"
 
 #ifndef MY_JNI_MYJNI_H
 #define MY_JNI_MYJNI_H

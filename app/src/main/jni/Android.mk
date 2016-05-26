@@ -14,7 +14,6 @@ LOCAL_CFLAGS += -DHAVE_SYS_UIO_H
 
 LOCAL_SRC_FILES := \
 	myjni.cpp \
-	src/format.cpp \
 	src/MyThread.cpp \
 	src/OrbPatch.cpp \
 	src/MutGetHomography.cpp \

@@ -549,7 +549,7 @@ public class MainActivity extends Activity
         super.onResume();
 
         mWorkThread = new WorkThread();
-        //mWorkThread.setPriority(10);
+        mWorkThread.setPriority(1);
         mWorkThread.start();
     }
 
