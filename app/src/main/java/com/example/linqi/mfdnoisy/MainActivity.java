@@ -57,8 +57,8 @@ public class MainActivity extends Activity
     public static final String CAMERA_FLASH_KEY = "flash_mode";
     public static final String PREVIEW_HEIGHT_KEY = "preview_height";
 
-    private static final int PICTURE_SIZE_MAX_WIDTH = 1920;
-    private static final int PREVIEW_SIZE_MAX_WIDTH = 3264;
+    private static final int PICTURE_SIZE_MAX_WIDTH = 3264;
+    private static final int PREVIEW_SIZE_MAX_WIDTH = 3264;  //1280
 
     private boolean getFrameofSix = false;
     private TextView mTextView;
@@ -83,6 +83,7 @@ public class MainActivity extends Activity
     private static int textureIndex = 0;
     private boolean isReading = false;
     private NdkUtils MFDenoisy = new NdkUtils();
+    private Bitmap mFinalBitmap = null;
 
     public void decodeToBitMap(byte[] data, Camera _camera) {
         Camera.Size size = mCamera.getParameters().getPreviewSize();
@@ -119,17 +120,19 @@ public class MainActivity extends Activity
 
         public void workBegin(String tag){
             Tag = tag;
-            timeBegin = System.currentTimeMillis();
+            if(timeBegin == 0 )
+                timeBegin = System.currentTimeMillis();
         }
 
         public void workEnd(){
             timeEnd = System.currentTimeMillis() - timeBegin;
             sumCount = sumCount + timeEnd;
             FPS++;
-            if(sumCount > 1000.0) {
+            if(timeEnd > 1000.0) {
                 Log.i(Tag, "Fram per second(FPS) = " + FPS );
                 FPS = 0;
-                sumCount = 0;
+                timeEnd = 0;
+                timeBegin = 0;
             }
             Log.i(Tag, "Time counts = " + timeEnd );
         }
@@ -402,11 +405,13 @@ public class MainActivity extends Activity
         if (parameters.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
         }
-
         parameters.setPreviewFormat(ImageFormat.YV12);
-
+        //parameters.setPreviewFrameRate(30);
+        //parameters.setPreviewFpsRange(20,30);
         // Lock in the changes
         mCamera.setParameters(parameters);
+        if(mFinalBitmap == null)
+            mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
     }
 
     private Camera.Size determineBestPreviewSize(Camera.Parameters parameters) {
@@ -562,6 +567,10 @@ public class MainActivity extends Activity
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if(mFinalBitmap != null) {
+            mFinalBitmap.recycle();
+            mFinalBitmap = null;
+        }
         //mWorkThread.setMsg(WorkThread.STATE_EXIT);
     }
 
@@ -597,7 +606,6 @@ public class MainActivity extends Activity
                             //message.what = 1;
                             //handler.sendMessage(message);
                             //circleBar.setVisibility(View.VISIBLE);
-                            Bitmap mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
                             long address = MFDenoisy.processing();
                             Mat outMat = new Mat(address);
                             Utils.matToBitmap(outMat, mFinalBitmap); //convert mat to bitmap

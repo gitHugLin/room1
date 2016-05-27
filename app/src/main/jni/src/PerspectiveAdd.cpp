@@ -678,8 +678,7 @@ GLuint PerspectiveAdd::createEGLImageTexture(GLuint _textureid, GLint _textureIn
             format = GL_RGBA;
             break;
     }
-    //Sofia use HAL_PIXEL_FORMAT_YV12
-    //RK3288 use HAL_PIXEL_FORMAT_YCrCb_420_SP
+
     //HAL_PIXEL_FORMAT_YCrCb_420_SP; HAL_PIXEL_FORMAT_RGB_888 ;HAL_PIXEL_FORMAT_YV12
     mGraphicBuffer[_textureIndex] = new GraphicBuffer(width, height, HAL_PIXEL_FORMAT_YV12,
                                                       GraphicBuffer::USAGE_HW_TEXTURE);// | GraphicBuffer::USAGE_SW_WRITE_RARELY);
