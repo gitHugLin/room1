@@ -18,6 +18,7 @@ import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
@@ -58,7 +59,7 @@ public class MainActivity extends Activity
     public static final String PREVIEW_HEIGHT_KEY = "preview_height";
 
     private static final int PICTURE_SIZE_MAX_WIDTH = 3264;
-    private static final int PREVIEW_SIZE_MAX_WIDTH = 3264;  //1280
+    private static final int PREVIEW_SIZE_MAX_WIDTH = 3264;  //1280 1920
 
     private boolean getFrameofSix = false;
     private TextView mTextView;
@@ -84,6 +85,7 @@ public class MainActivity extends Activity
     private boolean isReading = false;
     private NdkUtils MFDenoisy = new NdkUtils();
     private Bitmap mFinalBitmap = null;
+    Mat Ychannel;
 
     public void decodeToBitMap(byte[] data, Camera _camera) {
         Camera.Size size = mCamera.getParameters().getPreviewSize();
@@ -139,14 +141,18 @@ public class MainActivity extends Activity
     }
 
     private timeCount timer = new timeCount();
+
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-
+        //mCamera.addCallbackBuffer(new byte[mPicSize.height*mPicSize.width*3/2]);
+        if(mIndex == 0)
+            mIndex = 1;
+        else
+            mIndex = 0;
         timer.workBegin("onPreviewFrame");
         //Log.i("onPreviewFrame", "PreviewSize = ("+ mPicSize.width + "," + mPicSize.height +")" );
         if (data.length != 0) {
             if(!isReading) {
-                Mat Ychannel = new Mat(mPicSize.height, mPicSize.width, CvType.CV_8UC1, new Scalar(0));
                 Ychannel.put(0, 0, data);
                 long yAddr = Ychannel.getNativeObjAddr();
                 MFDenoisy.sendTextures(data,yAddr);
@@ -160,6 +166,9 @@ public class MainActivity extends Activity
             Log.e("onPreviewFrame", "onPreviewFrame error!");
         }
         timer.workEnd();
+        Log.d("preview", "buffer address: "+ mBuffer.get(mIndex) + "; size: " + mBuffer.size());
+        mCamera.addCallbackBuffer(mBuffer.get(mIndex));
+        //mCamera.addCallbackBuffer(mBuffer);
     }
 
     @Override
@@ -220,7 +229,6 @@ public class MainActivity extends Activity
                 }
             }
         });
-
         handler = new MyHandler();
     }
 
@@ -299,25 +307,35 @@ public class MainActivity extends Activity
         }
     }
 
+    //private byte[] mBuffer = null;
+    private ArrayList<byte []> mBuffer = new ArrayList();
+    private int mIndex = 0;
     /**
      * Start the camera preview
      */
     private void startCameraPreview() {
+
         determineDisplayOrientation();
         setupCamera();
 
         try {
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
+
+            mBuffer.clear();
+            byte[] buffer = new byte[mPicSize.height*mPicSize.width*3/2];
+            mBuffer.add(buffer);
+            byte[] buffer1 = new byte[mPicSize.height*mPicSize.width*3/2];
+            mBuffer.add(buffer1);
+            mCamera.addCallbackBuffer(mBuffer.get(0));
+            //mCamera.addCallbackBuffer(new byte[mPicSize.height*mPicSize.width*3/2]);
+            mCamera.setPreviewCallbackWithBuffer(this);
+            //mCamera.setPreviewCallback(this);
         } catch (IOException e) {
             Log.d(TAG, "Can't start camera preview due to IOException " + e);
             e.printStackTrace();
         }
-/*        Camera.Parameters parameters = mCamera.getParameters();
-        Camera.Size size = parameters.getPreviewSize();
-        mHeight = size.height + size.height/2;
-        mWidth = size.width;*/
-        mCamera.setPreviewCallback(this);
+
     }
 
     /**
@@ -325,7 +343,8 @@ public class MainActivity extends Activity
      */
     private void stopCameraPreview() {
         // Nulls out callbacks, stops face detection
-        mCamera.setPreviewCallback(null) ;
+        mCamera.setPreviewCallbackWithBuffer(null);
+        //mCamera.setPreviewCallback(null) ;
         mCamera.stopPreview();
         preview.setCamera(null);
     }
@@ -375,7 +394,8 @@ public class MainActivity extends Activity
         mDisplayOrientation = (cameraInfo.orientation - degrees + 360) % 360;
         mLayoutOrientation = degrees;
 
-        mCamera.setDisplayOrientation(displayOrientation);
+        //mCamera.setDisplayOrientation(displayOrientation);
+        mCamera.setDisplayOrientation(0);
     }
 
 
@@ -412,6 +432,8 @@ public class MainActivity extends Activity
         mCamera.setParameters(parameters);
         if(mFinalBitmap == null)
             mFinalBitmap = Bitmap.createBitmap(mPicSize.width, mPicSize.height, Bitmap.Config.ARGB_8888);
+
+        Ychannel = new Mat(mPicSize.height, mPicSize.width, CvType.CV_8UC1, new Scalar(0));
     }
 
     private Camera.Size determineBestPreviewSize(Camera.Parameters parameters) {
@@ -481,11 +503,50 @@ public class MainActivity extends Activity
 
         return bestSize;
     }
+    private void newOpenCamera() {
+        if (mThread == null) {
+            mThread = new CameraHandlerThread();
+        }
 
+        synchronized (mThread) {
+            mThread.openCamera();
+        }
+    }
+
+    private CameraHandlerThread mThread = null;
+    private class CameraHandlerThread extends HandlerThread {
+        Handler mHandler = null;
+
+        CameraHandlerThread() {
+            super("CameraHandlerThread");
+            start();
+            mHandler = new Handler(getLooper());
+        }
+
+        synchronized void notifyCameraOpened() {
+            notify();
+        }
+
+        void openCamera() {
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    getCamera(cameraID);
+                    notifyCameraOpened();
+                }
+            });
+            try {
+                wait();
+            }
+            catch (InterruptedException e) {
+                Log.w(TAG, "wait was interrupted");
+            }
+        }
+    }
     private void restartPreview() {
         stopCameraPreview();
         mCamera.release();
-
+        //newOpenCamera();
         getCamera(cameraID);
         startCameraPreview();
     }
@@ -673,11 +734,13 @@ public class MainActivity extends Activity
         }
     }
 
+
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         mHolder = holder;
 
         getCamera(cameraID);
+        //newOpenCamera();
         startCameraPreview();
     }
 
